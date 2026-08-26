@@ -53,9 +53,88 @@ class EmailService:
         # Port 465 always implies implicit TLS (SMTPS, RFC 8314).
         return settings.SMTP_USE_SSL or self.port == 465
 
+    @property
+    def brevo_api_key(self) -> str | None:
+        return settings.BREVO_API_KEY
+
+    @property
+    def use_http_api(self) -> bool:
+        """Ponteto: слать через Brevo HTTP API вместо smtplib.
+
+        Провайдер (hostvds) блокирует исходящие 25/465/587 на всех наших
+        серверах и открывает их только после верификации личности. HTTPS (443)
+        при этом открыт, поэтому транспортом по умолчанию становится API,
+        как только задан BREVO_API_KEY. Без ключа поведение прежнее — smtplib.
+        """
+        return bool(self.brevo_api_key)
+
     def is_configured(self) -> bool:
         """Check if SMTP is properly configured."""
         return settings.is_smtp_configured()
+
+    def _send_via_brevo_api(
+        self,
+        to_email: str,
+        subject: str,
+        body_html: str,
+        body_text: str,
+        sender_email: str,
+        attachments: list[tuple[str, bytes, str]] | None = None,
+    ) -> bool:
+        """Ponteto: отправка письма через Brevo transactional API.
+
+        Возвращает тот же bool, что и smtplib-ветка, — вызывающий код
+        (send_verification_email и соседи) о смене транспорта не знает.
+        """
+        import base64
+        import json
+        import urllib.error
+        import urllib.request
+
+        payload: dict[str, Any] = {
+            'sender': {'email': sender_email, 'name': self.from_name or ''},
+            'to': [{'email': to_email}],
+            'subject': subject,
+            'htmlContent': body_html,
+            'textContent': body_text,
+        }
+
+        if attachments:
+            payload['attachment'] = [
+                {'name': filename, 'content': base64.b64encode(content).decode('ascii')}
+                for filename, content, _mimetype in attachments
+            ]
+
+        request = urllib.request.Request(
+            'https://api.brevo.com/v3/smtp/email',
+            data=json.dumps(payload).encode('utf-8'),
+            headers={
+                'api-key': self.brevo_api_key or '',
+                'content-type': 'application/json',
+                'accept': 'application/json',
+            },
+            method='POST',
+        )
+
+        try:
+            with urllib.request.urlopen(request, timeout=30) as response:
+                if 200 <= response.status < 300:
+                    logger.info('Email sent via Brevo API', to_email=to_email, status=response.status)
+                    return True
+                logger.error('Brevo API returned non-2xx', to_email=to_email, status=response.status)
+                return False
+        except urllib.error.HTTPError as e:
+            # Тело ответа Brevo содержит машинный code и человекочитаемое
+            # message — без него в логах остаётся голый 400 без причины.
+            try:
+                details = e.read().decode('utf-8', errors='replace')
+            except Exception:
+                details = '<no body>'
+            logger.error('Brevo API HTTP error', to_email=to_email, status=e.code, details=details)
+            return False
+        except Exception as e:
+            logger.error('Brevo API request failed', to_email=to_email, error=e)
+            return False
 
     @staticmethod
     def _html_to_plain_text(body_html: str) -> str:
@@ -137,6 +216,18 @@ class EmailService:
         # Defensive: strip newlines to prevent header injection
         to_email = to_email.strip().replace('\n', '').replace('\r', '')
         subject = subject.replace('\n', '').replace('\r', '')
+
+        # Ponteto: HTTP-транспорт идёт до сборки MIME — Brevo API принимает
+        # готовые html/text строки и сам собирает письмо на своей стороне.
+        if self.use_http_api:
+            return self._send_via_brevo_api(
+                to_email=to_email,
+                subject=subject,
+                body_html=body_html,
+                body_text=body_text if body_text is not None else self._html_to_plain_text(body_html),
+                sender_email=sender_email,
+                attachments=attachments,
+            )
 
         try:
             # С вложениями письмо становится multipart/mixed: внутри него

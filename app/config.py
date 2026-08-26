@@ -1331,6 +1331,11 @@ class Settings(BaseSettings):
     # Implicit TLS (SMTPS) — required for port 465. Auto-enabled when SMTP_PORT == 465.
     SMTP_USE_SSL: bool = False
 
+    # Ponteto: Brevo HTTP API как альтернативный транспорт для писем.
+    # Провайдер (hostvds) блокирует исходящие 25/465/587, поэтому smtplib
+    # недоступен. Если ключ задан — send_email() уходит через HTTPS API.
+    BREVO_API_KEY: str | None = None
+
     # Ban System Integration (BedolagaBan monitoring)
     BAN_SYSTEM_ENABLED: bool = False
     BAN_SYSTEM_API_URL: str | None = None  # e.g., http://ban-server:8000
@@ -3778,6 +3783,10 @@ class Settings(BaseSettings):
     def is_smtp_configured(self) -> bool:
         # For servers without AUTH, only host and from_email are required
         has_from = bool(self.SMTP_FROM_EMAIL or self.SMTP_USER)
+        # Ponteto: транспорт может быть HTTP (Brevo API) вместо SMTP —
+        # тогда SMTP_HOST не нужен, достаточно ключа и адреса отправителя.
+        if self.BREVO_API_KEY and has_from:
+            return True
         return bool(self.SMTP_HOST and has_from)
 
     def get_smtp_from_email(self) -> str | None:
