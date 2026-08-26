@@ -68,6 +68,7 @@ class NotificationType(Enum):
     # Auth emails
     EMAIL_VERIFICATION = 'email_verification'
     PASSWORD_RESET = 'password_reset'
+    MAGIC_LINK = 'magic_link'
     EMAIL_CHANGE_CODE = 'email_change_code'
 
     # Webhook subscription events

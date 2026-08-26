@@ -119,6 +119,28 @@ class PasswordResetRequest(BaseModel):
     password: str = Field(..., min_length=8, max_length=128, description='New password (min 8 chars)')
 
 
+class MagicLinkRequest(BaseModel):
+    """Request to send a magic (passwordless) login link."""
+
+    email: EmailStr = Field(..., description='Email address')
+
+
+class MagicLinkConsumeRequest(BaseModel):
+    """Request to consume a magic link token and log in.
+    Magic link auth is always for existing users with a known email — referral codes
+    are not applicable here. campaign_slug is supported (campaign bonus can apply to existing users).
+    """
+
+    token: str = Field(..., min_length=16, max_length=128, description='Magic link auth token')
+    campaign_slug: str | None = Field(
+        None,
+        min_length=1,
+        max_length=64,
+        pattern=r'^[a-zA-Z0-9_-]+$',
+        description='Campaign slug captured from cabinet URL',
+    )
+
+
 class AutoLoginRequest(BaseModel):
     """Request for auto-login from guest purchase success page."""
 

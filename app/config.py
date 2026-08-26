@@ -1288,6 +1288,7 @@ class Settings(BaseSettings):
     CABINET_EMAIL_VERIFICATION_ENABLED: bool = True
     CABINET_EMAIL_VERIFICATION_EXPIRE_HOURS: int = 24
     CABINET_PASSWORD_RESET_EXPIRE_HOURS: int = 1
+    CABINET_MAGIC_LINK_EXPIRE_MINUTES: int = 15  # Magic link (passwordless login) token expiration
     CABINET_EMAIL_CHANGE_CODE_EXPIRE_MINUTES: int = 15  # Email change verification code expiration
     CABINET_EMAIL_AUTH_ENABLED: bool = True  # Enable email registration/login in cabinet
     # Согласие с офертой и политикой при ПЕРВОЙ авторизации в кабинете (для новых юзеров).
@@ -3767,6 +3768,8 @@ class Settings(BaseSettings):
 
     def get_cabinet_password_reset_expire_hours(self) -> int:
         return max(1, self.CABINET_PASSWORD_RESET_EXPIRE_HOURS)
+    def get_cabinet_magic_link_expire_minutes(self) -> int:
+        return max(1, self.CABINET_MAGIC_LINK_EXPIRE_MINUTES)
 
     def get_cabinet_email_change_code_expire_minutes(self) -> int:
         return max(1, self.CABINET_EMAIL_CHANGE_CODE_EXPIRE_MINUTES)

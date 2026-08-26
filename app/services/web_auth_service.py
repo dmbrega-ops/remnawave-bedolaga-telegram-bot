@@ -16,6 +16,7 @@ from typing import Any
 
 import structlog
 
+from app.config import settings
 from app.utils.cache import cache, cache_key
 
 
@@ -44,6 +45,34 @@ async def create_web_auth_token() -> str:
         raise RuntimeError('Failed to create web auth token')
 
     logger.debug('Web auth token created', token_prefix=token[:8])
+    return token
+
+
+async def create_magic_link_token(user_id: int) -> str:
+    """Generate a magic link (passwordless login) token and store it in Redis.
+
+    Unlike create_web_auth_token(), this is created already 'linked' — there is
+    no separate confirming party (bot), the user's identity is already known
+    (found by verified email) at request time.
+
+    Returns the raw token string (URL-safe, 24 bytes of entropy).
+    """
+    token = secrets.token_urlsafe(24)
+    key = cache_key(WEB_AUTH_PREFIX, token)
+    ttl_seconds = settings.get_cabinet_magic_link_expire_minutes() * 60
+    value: dict[str, Any] = {
+        'status': 'linked',
+        'kind': 'magic_link',
+        'user_id': user_id,
+        'created_at': datetime.now(UTC).isoformat(),
+        'linked_at': datetime.now(UTC).isoformat(),
+    }
+    stored = await cache.set(key, value, expire=ttl_seconds)
+    if not stored:
+        logger.error('Failed to store magic link token in Redis')
+        raise RuntimeError('Failed to create magic link token')
+
+    logger.debug('Magic link token created', token_prefix=token[:8], user_id=user_id)
     return token
 
 

@@ -41,6 +41,7 @@ from app.services.referral_service import process_referral_registration
 from app.services.web_auth_service import (
     WEB_AUTH_TOKEN_TTL,
     consume_web_auth_token,
+    create_magic_link_token,
     create_web_auth_token,
     poll_web_auth_token,
 )
@@ -90,6 +91,8 @@ from ..schemas.auth import (
     EmailRegisterRequest,
     EmailRegisterStandaloneRequest,
     EmailVerifyRequest,
+    MagicLinkConsumeRequest,
+    MagicLinkRequest,
     PasswordForgotRequest,
     PasswordResetRequest,
     RefreshTokenRequest,
@@ -2479,4 +2482,137 @@ async def poll_deep_link_token(
 
     logger.info('Deep link auth successful', user_id=user.id, telegram_id=user.telegram_id)
 
+    return response
+
+
+@router.post('/magic-link/request')
+async def request_magic_link(
+    request: MagicLinkRequest,
+    raw_request: Request,
+    db: AsyncSession = Depends(get_cabinet_db),
+):
+    """Request a magic (passwordless) login link by email.
+
+    Mirrors forgot_password(): always returns the same generic message to
+    prevent email enumeration. Login-only — never creates a new account.
+    """
+    client_ip = get_client_ip(raw_request)
+    if await RateLimitCache.is_ip_rate_limited(client_ip, 'magic_link_request', limit=3, window=60, fail_closed=True):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail='Too many requests',
+            headers={'Retry-After': '60'},
+        )
+
+    generic_response = {'message': 'If the email exists, a login link has been sent'}
+
+    email_lower = (request.email or '').strip().lower()
+    result = await db.execute(select(User).where(func.lower(User.email) == email_lower))
+    user = result.scalar_one_or_none()
+
+    if not user or not user.email_verified:
+        return generic_response
+
+    if user.status != UserStatus.ACTIVE.value:
+        return generic_response
+
+    token = await create_magic_link_token(user.id)
+
+    if email_service.is_configured():
+        login_url = f'{settings.CABINET_URL}/magic-link'
+        lang = user.language or 'ru'
+        expire_minutes = settings.get_cabinet_magic_link_expire_minutes()
+
+        override = await get_rendered_override(
+            'magic_link',
+            lang,
+            context={
+                'username': user.first_name or '',
+                'email': user.email,
+                'login_url': f'{login_url}?token={token}',
+                'expire_minutes': str(expire_minutes),
+            },
+            db=db,
+            required_vars=['login_url'],
+        )
+        custom_subject, custom_body = override or (None, None)
+
+        await asyncio.to_thread(
+            email_service.send_magic_link_email,
+            to_email=user.email,
+            login_token=token,
+            login_url=login_url,
+            username=user.first_name,
+            language=lang,
+            custom_subject=custom_subject,
+            custom_body_html=custom_body,
+        )
+
+    logger.info('Magic link requested', user_id=user.id)
+    return generic_response
+
+
+@router.post('/magic-link/consume', response_model=AuthResponse)
+async def consume_magic_link(
+    request: MagicLinkConsumeRequest,
+    raw_request: Request,
+    db: AsyncSession = Depends(get_cabinet_db),
+):
+    """Consume a magic link token and log the user in (passwordless).
+
+    Mirrors poll_deep_link_token(), but the token is created already 'linked'
+    by create_magic_link_token() — there is no pending state to wait for.
+    """
+    client_ip = get_client_ip(raw_request)
+    if await RateLimitCache.is_ip_rate_limited(client_ip, 'magic_link_consume', limit=10, window=60, fail_closed=True):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail='Too many requests',
+            headers={'Retry-After': '60'},
+        )
+
+    consumed = await consume_web_auth_token(request.token)
+    if not consumed:
+        raise HTTPException(
+            status_code=status.HTTP_410_GONE,
+            detail='Link expired or already used',
+        )
+
+    if consumed.get('kind') != 'magic_link' or consumed.get('status') != 'linked':
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Invalid token',
+        )
+
+    user_id = consumed.get('user_id')
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail='Invalid token data',
+        )
+
+    user = await get_user_by_id(db, int(user_id))
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='User not found',
+        )
+
+    if user.status != UserStatus.ACTIVE.value:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='Account is deactivated',
+        )
+
+    user.cabinet_last_login = datetime.now(UTC)
+    await db.commit()
+
+    response = await _create_auth_response(user, db)
+    await _store_refresh_token(db, user.id, response.refresh_token, device_info='magic_link')
+
+    response.campaign_bonus = await _process_campaign_bonus(db, user, request.campaign_slug)
+    if response.campaign_bonus:
+        response.user = _user_to_response(user)
+
+    logger.info('Magic link auth successful', user_id=user.id, email=user.email)
     return response

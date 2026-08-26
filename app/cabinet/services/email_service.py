@@ -389,6 +389,43 @@ class EmailService:
             return False
         return self.send_email(to_email, *rendered)
 
+    def send_magic_link_email(
+        self,
+        to_email: str,
+        login_token: str,
+        login_url: str,
+        username: str | None = None,
+        language: str = 'ru',
+        custom_subject: str | None = None,
+        custom_body_html: str | None = None,
+    ) -> bool:
+        """
+        Send magic link (passwordless login) email.
+        Args:
+            to_email: Recipient email address
+            login_token: Magic link token
+            login_url: Base URL for magic link login (token will be appended)
+            username: User's name for personalization
+            language: Language code (ru, en, zh, ua, fa)
+            custom_subject: Override subject from admin template
+            custom_body_html: Override body HTML from admin template (already wrapped in base template)
+        Returns:
+            True if email was sent successfully, False otherwise
+        """
+        if custom_subject and custom_body_html:
+            return self.send_email(to_email, custom_subject, custom_body_html)
+        rendered = self._render_default_template(
+            'magic_link',
+            language,
+            {
+                'username': username or '',
+                'login_url': f'{login_url}?token={login_token}',
+                'expire_minutes': settings.get_cabinet_magic_link_expire_minutes(),
+            },
+        )
+        if not rendered:
+            return False
+        return self.send_email(to_email, *rendered)
     def send_email_change_code(
         self,
         to_email: str,

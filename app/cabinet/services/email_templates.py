@@ -67,6 +67,7 @@ class EmailNotificationTemplates:
             NotificationType.PROMO_OFFER: self._promo_offer_template,
             NotificationType.EMAIL_VERIFICATION: self._email_verification_template,
             NotificationType.PASSWORD_RESET: self._password_reset_template,
+            NotificationType.MAGIC_LINK: self._magic_link_template,
             NotificationType.EMAIL_CHANGE_CODE: self._email_change_code_template,
             NotificationType.GUEST_SUBSCRIPTION_DELIVERED: self._guest_subscription_delivered_template,
             NotificationType.GUEST_ACTIVATION_REQUIRED: self._guest_activation_required_template,
@@ -1843,6 +1844,89 @@ class EmailNotificationTemplates:
             'body_html': self._get_base_template(bodies.get(language, bodies['ru']), language),
         }
 
+    def _magic_link_template(self, language: str, context: dict[str, Any]) -> dict[str, str]:
+        """Template for magic link (passwordless login)."""
+        username = html.escape(context.get('username', ''))
+        login_url = html.escape(context.get('login_url', '#'))
+        expire_minutes = context.get('expire_minutes', 15)
+
+        subjects = {
+            'ru': 'Вход в личный кабинет',
+            'en': 'Sign in to your account',
+            'zh': '登录您的账户',
+            'ua': 'Вхід в особистий кабінет',
+            'fa': 'ورود به حساب کاربری',
+        }
+
+        greeting = {
+            'ru': f'Здравствуйте{", " + username if username else ""}!',
+            'en': f'Hello{", " + username if username else ""}!',
+            'zh': f'您好{", " + username if username else ""}!',
+            'ua': f'Вітаємо{", " + username if username else ""}!',
+            'fa': f'سلام{" " + username if username else ""}!',
+        }
+
+        bodies = {
+            'fa': f"""
+                <h2>{greeting.get('fa')}</h2>
+                <p>برای ورود به حساب کاربری خود روی دکمه زیر بزنید. نیازی به رمز عبور نیست:</p>
+                <p style="text-align: center;">
+                    <a href="{login_url}" class="button">ورود</a>
+                </p>
+                <p>یا این لینک را در مرورگر خود کپی و باز کنید:</p>
+                <p><a href="{login_url}">{login_url}</a></p>
+                <p>این لینک تا {expire_minutes} دقیقه و فقط یک بار قابل استفاده است.</p>
+                <p class="warning" style="color: #dc3545; font-weight: bold;">اگر شما درخواست ورود نداده‌اید، این ایمیل را نادیده بگیرید.</p>
+            """,
+            'ru': f"""
+                <h2>{greeting.get('ru')}</h2>
+                <p>Нажмите на кнопку ниже, чтобы войти в личный кабинет. Пароль не потребуется:</p>
+                <p style="text-align: center;">
+                    <a href="{login_url}" class="button">Войти</a>
+                </p>
+                <p>Или скопируйте и вставьте эту ссылку в браузер:</p>
+                <p><a href="{login_url}">{login_url}</a></p>
+                <p>Ссылка действительна {expire_minutes} минут и работает один раз.</p>
+                <p class="warning" style="color: #dc3545; font-weight: bold;">Если вы не запрашивали вход, просто проигнорируйте это письмо.</p>
+            """,
+            'en': f"""
+                <h2>{greeting.get('en')}</h2>
+                <p>Click the button below to sign in to your account. No password needed:</p>
+                <p style="text-align: center;">
+                    <a href="{login_url}" class="button">Sign in</a>
+                </p>
+                <p>Or copy and paste this link in your browser:</p>
+                <p><a href="{login_url}">{login_url}</a></p>
+                <p>This link is valid for {expire_minutes} minutes and can be used once.</p>
+                <p class="warning" style="color: #dc3545; font-weight: bold;">If you didn't request this, please ignore this email.</p>
+            """,
+            'zh': f"""
+                <h2>{greeting.get('zh')}</h2>
+                <p>点击下方按钮登录您的账户，无需密码：</p>
+                <p style="text-align: center;">
+                    <a href="{login_url}" class="button">登录</a>
+                </p>
+                <p>或将此链接复制并粘贴到浏览器中：</p>
+                <p><a href="{login_url}">{login_url}</a></p>
+                <p>此链接 {expire_minutes} 分钟内有效，且仅可使用一次。</p>
+                <p class="warning" style="color: #dc3545; font-weight: bold;">如果您没有请求登录，请忽略此邮件。</p>
+            """,
+            'ua': f"""
+                <h2>{greeting.get('ua')}</h2>
+                <p>Натисніть на кнопку нижче, щоб увійти в особистий кабінет. Пароль не потрібен:</p>
+                <p style="text-align: center;">
+                    <a href="{login_url}" class="button">Увійти</a>
+                </p>
+                <p>Або скопіюйте та вставте це посилання в браузер:</p>
+                <p><a href="{login_url}">{login_url}</a></p>
+                <p>Посилання дійсне {expire_minutes} хвилин і працює один раз.</p>
+                <p class="warning" style="color: #dc3545; font-weight: bold;">Якщо ви не запитували вхід, просто проігноруйте цей лист.</p>
+            """,
+        }
+        return {
+            'subject': subjects.get(language, subjects['ru']),
+            'body_html': self._get_base_template(bodies.get(language, bodies['ru']), language),
+        }
     def _email_change_code_template(self, language: str, context: dict[str, Any]) -> dict[str, str]:
         """Template for email change verification code."""
         username = html.escape(context.get('username', ''))
