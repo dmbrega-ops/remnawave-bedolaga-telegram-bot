@@ -154,8 +154,8 @@ class EmailNotificationTemplates:
         body {{
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             line-height: 1.6;
-            color: #333;
-            background-color: #f5f5f5;
+            color: #cbd5e1;
+            background-color: #0f172a;
             margin: 0;
             padding: 0;
         }}
@@ -163,15 +163,15 @@ class EmailNotificationTemplates:
             max-width: 600px;
             margin: 0 auto;
             padding: 20px;
-            background-color: #ffffff;
+            background-color: #1e293b;
         }}
         .header {{
             text-align: center;
             padding: 20px 0;
-            border-bottom: 2px solid #007bff;
+            border-bottom: 2px solid #34d399;
         }}
         .header h1 {{
-            color: #007bff;
+            color: #34d399;
             margin: 0;
             font-size: 24px;
         }}
@@ -179,8 +179,8 @@ class EmailNotificationTemplates:
             padding: 30px 20px;
         }}
         .highlight {{
-            background-color: #f8f9fa;
-            border-left: 4px solid #007bff;
+            background-color: #0f172a;
+            border-left: 4px solid #34d399;
             padding: 15px;
             margin: 20px 0;
         }}
@@ -196,22 +196,22 @@ class EmailNotificationTemplates:
         .button {{
             display: inline-block;
             padding: 12px 24px;
-            background-color: #007bff;
-            color: white !important;
+            background-color: #34d399;
+            color: #022c22 !important;
             text-decoration: none;
             border-radius: 5px;
             margin: 20px 0;
             font-weight: bold;
         }}
         .button:hover {{
-            background-color: #0056b3;
+            background-color: #059669;
         }}
         .footer {{
             margin-top: 30px;
             padding-top: 20px;
-            border-top: 1px solid #eee;
+            border-top: 1px solid #334155;
             font-size: 12px;
-            color: #666;
+            color: #94a3b8;
             text-align: center;
         }}
         .amount {{
@@ -1705,7 +1705,7 @@ class EmailNotificationTemplates:
                 <p>Или скопируйте и вставьте эту ссылку в браузер:</p>
                 <p><a href="{verification_url}">{verification_url}</a></p>
                 <p>Ссылка действительна в течение {expire_hours} часов.</p>
-                <p style="color: #666;">Если вы не создавали аккаунт, просто проигнорируйте это письмо.</p>
+                <p style="color: #94a3b8;">Если вы не создавали аккаунт, просто проигнорируйте это письмо.</p>
             """,
             'fa': f"""
                 <h2>{greeting.get('fa')}</h2>
@@ -1716,7 +1716,7 @@ class EmailNotificationTemplates:
                 <p>یا این لینک را در مرورگر خود کپی و باز کنید:</p>
                 <p><a href="{verification_url}">{verification_url}</a></p>
                 <p>این لینک تا {expire_hours} ساعت معتبر است.</p>
-                <p style="color: #666;">اگر شما این حساب را ایجاد نکرده‌اید، این ایمیل را نادیده بگیرید.</p>
+                <p style="color: #94a3b8;">اگر شما این حساب را ایجاد نکرده‌اید، این ایمیل را نادیده بگیرید.</p>
             """,
             'en': f"""
                 <h2>{greeting.get('en')}</h2>
@@ -1727,7 +1727,7 @@ class EmailNotificationTemplates:
                 <p>Or copy and paste this link in your browser:</p>
                 <p><a href="{verification_url}">{verification_url}</a></p>
                 <p>This link will expire in {expire_hours} hours.</p>
-                <p style="color: #666;">If you didn't create an account, you can safely ignore this email.</p>
+                <p style="color: #94a3b8;">If you didn't create an account, you can safely ignore this email.</p>
             """,
             'zh': f"""
                 <h2>{greeting.get('zh')}</h2>
@@ -1738,7 +1738,7 @@ class EmailNotificationTemplates:
                 <p>或将此链接复制并粘贴到浏览器中：</p>
                 <p><a href="{verification_url}">{verification_url}</a></p>
                 <p>此链接将在 {expire_hours} 小时后过期。</p>
-                <p style="color: #666;">如果您没有创建账户，请忽略此邮件。</p>
+                <p style="color: #94a3b8;">如果您没有创建账户，请忽略此邮件。</p>
             """,
             'ua': f"""
                 <h2>{greeting.get('ua')}</h2>
@@ -1749,7 +1749,7 @@ class EmailNotificationTemplates:
                 <p>Або скопіюйте та вставте це посилання в браузер:</p>
                 <p><a href="{verification_url}">{verification_url}</a></p>
                 <p>Посилання дійсне протягом {expire_hours} годин.</p>
-                <p style="color: #666;">Якщо ви не створювали акаунт, просто проігноруйте цей лист.</p>
+                <p style="color: #94a3b8;">Якщо ви не створювали акаунт, просто проігноруйте цей лист.</p>
             """,
         }
 
@@ -1877,35 +1877,35 @@ class EmailNotificationTemplates:
                 <p>Вы запросили смену email адреса. Используйте код ниже для подтверждения:</p>
                 {code_box}
                 <p>Код действителен в течение {expire_minutes} минут.</p>
-                <p style="color: #666;">Если вы не запрашивали смену email, просто проигнорируйте это письмо.</p>
+                <p style="color: #94a3b8;">Если вы не запрашивали смену email, просто проигнорируйте это письмо.</p>
             """,
             'en': f"""
                 <h2>{greeting.get('en')}</h2>
                 <p>You requested to change your email address. Use the code below to confirm:</p>
                 {code_box}
                 <p>This code will expire in {expire_minutes} minutes.</p>
-                <p style="color: #666;">If you didn't request an email change, you can safely ignore this email.</p>
+                <p style="color: #94a3b8;">If you didn't request an email change, you can safely ignore this email.</p>
             """,
             'zh': f"""
                 <h2>{greeting.get('zh')}</h2>
                 <p>您请求更换邮箱地址。请使用以下验证码确认：</p>
                 {code_box}
                 <p>此验证码将在 {expire_minutes} 分钟后过期。</p>
-                <p style="color: #666;">如果您没有请求更换邮箱，请忽略此邮件。</p>
+                <p style="color: #94a3b8;">如果您没有请求更换邮箱，请忽略此邮件。</p>
             """,
             'ua': f"""
                 <h2>{greeting.get('ua')}</h2>
                 <p>Ви запросили зміну email адреси. Використовуйте код нижче для підтвердження:</p>
                 {code_box}
                 <p>Код дійсний протягом {expire_minutes} хвилин.</p>
-                <p style="color: #666;">Якщо ви не запитували зміну email, просто проігноруйте цей лист.</p>
+                <p style="color: #94a3b8;">Якщо ви не запитували зміну email, просто проігноруйте цей лист.</p>
             """,
             'fa': f"""
                 <h2>{greeting.get('fa')}</h2>
                 <p>شما درخواست تغییر ایمیل داده‌اید. برای تایید از کد زیر استفاده کنید:</p>
                 {code_box}
                 <p>این کد تا {expire_minutes} دقیقه معتبر است.</p>
-                <p style="color: #666;">اگر شما درخواست تغییر ایمیل نداده‌اید، این ایمیل را نادیده بگیرید.</p>
+                <p style="color: #94a3b8;">اگر شما درخواست تغییر ایمیل نداده‌اید، این ایمیل را نادیده بگیرید.</p>
             """,
         }
 
