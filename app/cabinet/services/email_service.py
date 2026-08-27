@@ -100,6 +100,7 @@ class EmailService:
         body_text: str,
         sender_email: str,
         attachments: list[tuple[str, bytes, str]] | None = None,
+        unsubscribe_url: str | None = None,
     ) -> bool:
         """Ponteto: отправка письма через Brevo transactional API.
 
@@ -119,6 +120,25 @@ class EmailService:
             'textContent': body_text,
         }
 
+        # RFC 8058: Gmail/Yahoo требуют one-click отписку от bulk-отправителей.
+        # SMTP-ветка ставит те же заголовки в MIME; здесь они идут в payload['headers'].
+        if unsubscribe_url:
+            safe_unsubscribe = unsubscribe_url.strip()
+            unsafe_chars = (chr(13), chr(10), '<', '>')
+            if any(ch in safe_unsubscribe for ch in unsafe_chars) or not safe_unsubscribe.startswith(
+                ('http://', 'https://')
+            ):
+                logger.warning('Некорректный unsubscribe_url — заголовки отписки пропущены (Brevo)')
+            else:
+                from .email_unsubscribe import build_unsubscribe_mailto
+
+                targets = ['<' + safe_unsubscribe + '>']
+                if mailto := build_unsubscribe_mailto():
+                    targets.append('<' + mailto + '>')
+                payload['headers'] = {
+                    'List-Unsubscribe': ', '.join(targets),
+                    'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+                }
         if attachments:
             payload['attachment'] = [
                 {'name': filename, 'content': base64.b64encode(content).decode('ascii')}
@@ -282,6 +302,7 @@ class EmailService:
                 body_text=body_text if body_text is not None else self._html_to_plain_text(body_html),
                 sender_email=sender_email,
                 attachments=attachments,
+                unsubscribe_url=unsubscribe_url,
             )
         cooldown_left = self._cooldown_left()
         if cooldown_left:
