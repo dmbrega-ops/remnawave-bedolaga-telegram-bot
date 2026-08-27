@@ -6,6 +6,8 @@ Supports multiple languages: ru, en, zh, ua, fa
 
 import html
 from functools import partial
+
+from premailer import transform
 from typing import Any
 
 from app.config import settings
@@ -118,9 +120,9 @@ class EmailNotificationTemplates:
         if content_lower.startswith('<!doctype') or content_lower.startswith('<html'):
             return content_stripped
 
-        # Tier 2: Styled content — minimal wrapper without forced styling
+        # Tier 2: Styled content — minimal wrapper, inline the CSS for email clients
         if '<style' in content_lower or 'background' in content_lower:
-            return f"""<!DOCTYPE html>
+            wrapped = f"""<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
@@ -130,6 +132,13 @@ class EmailNotificationTemplates:
     {content}
 </body>
 </html>"""
+            return transform(
+                wrapped,
+                keep_style_tags=False,
+                remove_classes=True,
+                disable_validation=True,
+                cssutils_logging_level='CRITICAL',
+            )
 
         # Tier 3: Simple HTML fragment — use base template for structure
         return self._get_base_template(content, language)
@@ -145,7 +154,7 @@ class EmailNotificationTemplates:
         }
         footer_text = footer_texts.get(language, footer_texts['ru'])
 
-        return f"""
+        html_doc = f"""
 <!DOCTYPE html>
 <html>
 <head>
@@ -241,6 +250,13 @@ class EmailNotificationTemplates:
 </body>
 </html>
 """
+        return transform(
+            html_doc,
+            keep_style_tags=False,
+            remove_classes=True,
+            disable_validation=True,
+            cssutils_logging_level='CRITICAL',
+        )
 
     def _get_cabinet_button(self, language: str) -> str:
         """Get cabinet link button HTML."""
