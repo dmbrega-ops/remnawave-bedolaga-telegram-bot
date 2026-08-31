@@ -110,8 +110,8 @@ class EmailNotificationTemplates:
         1. Full HTML document (<!DOCTYPE or <html>) — return as-is, no wrapping
         2. Styled content (has <style> tag or background CSS) — minimal HTML wrapper
            without forced colors, headers, or footers
-        3. Simple HTML fragment — wrap with base template (header, footer, white bg)
-           for backward compatibility
+        3. Simple HTML fragment — wrap with base template (branded header, footer,
+           dark card) for backward compatibility
         """
         content_stripped = content.strip()
         content_lower = content_stripped.lower()
@@ -151,8 +151,86 @@ class EmailNotificationTemplates:
         'fa': 'لغو اشتراک ایمیل‌های تبلیغاتی',
     }
 
+    _SUPPORT_TITLE_TEXTS = {
+        'ru': 'Нужна помощь?',
+        'en': 'Need help?',
+        'zh': '需要帮助？',
+        'ua': 'Потрібна допомога?',
+        'fa': 'به کمک نیاز دارید؟',
+    }
+
+    _SUPPORT_BODY_TEXTS = {
+        'ru': 'Ответьте на это письмо или напишите нам напрямую — разберёмся.',
+        'en': 'Reply to this email or reach out directly — we will sort it out.',
+        'zh': '直接回复此邮件或联系我们，我们会帮您解决。',
+        'ua': 'Відповідайте на цей лист або напишіть нам напряму — розберемося.',
+        'fa': 'به این ایمیل پاسخ دهید یا مستقیماً با ما تماس بگیرید — کمک می‌کنیم.',
+    }
+
+    _SUPPORT_TELEGRAM_LABELS = {
+        'ru': 'или в Telegram:',
+        'en': 'or on Telegram:',
+        'zh': '或通过 Telegram：',
+        'ua': 'або в Telegram:',
+        'fa': 'یا در تلگرام:',
+    }
+
+    def _get_support_block(self, language: str) -> str:
+        """Rounded, accent-bordered support box with contact links, shared by every email.
+
+        Only rendered when a support contact is actually configured — an empty
+        box would just be dead chrome.
+        """
+        support_email = (getattr(settings, 'SUPPORT_EMAIL', '') or '').strip()
+        support_contact_url = settings.get_support_contact_url()
+        support_contact_display = settings.get_support_contact_display_html()
+
+        if not support_email and not support_contact_url:
+            return ''
+
+        title = self._SUPPORT_TITLE_TEXTS.get(language, self._SUPPORT_TITLE_TEXTS['ru'])
+        body = self._SUPPORT_BODY_TEXTS.get(language, self._SUPPORT_BODY_TEXTS['ru'])
+
+        email_html = ''
+        if support_email:
+            escaped_email = html.escape(support_email, quote=True)
+            email_html = (
+                f'<a href="mailto:{escaped_email}" '
+                f'style="display:inline-block; background-color:#34d399; color:#022c22 !important; '
+                f'font-weight:600; font-size:15px; text-decoration:none; padding:13px 28px; '
+                f'border-radius:11px;">{html.escape(support_email)}</a>'
+            )
+
+        telegram_html = ''
+        if support_contact_url:
+            telegram_label = self._SUPPORT_TELEGRAM_LABELS.get(language, self._SUPPORT_TELEGRAM_LABELS['ru'])
+            top_margin = '14px' if email_html else '0'
+            telegram_html = (
+                f'<p style="margin:{top_margin} 0 0; font-size:13px; color:#94a3b8;">'
+                f'{telegram_label} '
+                f'<a href="{html.escape(support_contact_url, quote=True)}" style="color:#34d399;">'
+                f'{support_contact_display}</a></p>'
+            )
+
+        return f"""
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#0f172a; border:1px solid #34d399; border-radius:14px;">
+                    <tr>
+                        <td style="padding:22px; text-align:center;">
+                            <p style="margin:0 0 10px; font-size:15px; font-weight:600; color:#ffffff;">{title}</p>
+                            <p style="margin:0 0 16px; font-size:13px; line-height:1.6; color:#94a3b8;">{body}</p>
+                            {email_html}
+                            {telegram_html}
+                        </td>
+                    </tr>
+                </table>"""
+
     def _get_base_template(self, content: str, language: str = 'ru', unsubscribe_url: str = '') -> str:
         """Wrap content in base HTML template.
+
+        Table-based layout with the brand's dark/green style: Gmail strips
+        ``<style>`` from ``<head>``, so ``premailer.transform(..., keep_style_tags=False)``
+        below inlines everything before send — that fix is load-bearing for
+        Gmail dark mode (invisible text otherwise) and must stay applied here.
 
         ``unsubscribe_url`` непустой только у маркетинговых писем — у писем со
         сбросом пароля или чеком отписке взяться неоткуда.
@@ -170,104 +248,111 @@ class EmailNotificationTemplates:
         if unsubscribe_url:
             unsubscribe_label = self._UNSUBSCRIBE_TEXTS.get(language, self._UNSUBSCRIBE_TEXTS['ru'])
             unsubscribe_block = (
-                f'<p><a href="{html.escape(unsubscribe_url, quote=True)}" '
-                f'style="color: #666;">{unsubscribe_label}</a></p>'
+                f'<p style="margin:8px 0 0;"><a href="{html.escape(unsubscribe_url, quote=True)}" '
+                f'style="color:#64748b;">{unsubscribe_label}</a></p>'
             )
+
+        support_block = self._get_support_block(language)
+        support_row = ''
+        if support_block:
+            support_row = f'<tr><td style="padding:28px 32px 0;">{support_block}</td></tr>'
 
         html_doc = f"""
 <!DOCTYPE html>
-<html>
+<html lang="{html.escape(language, quote=True)}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{html.escape(self.service_name)}</title>
     <style>
-        body {{
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            line-height: 1.6;
+        .content-body h2 {{
+            margin: 0 0 16px;
+            color: #ffffff;
+            font-size: 20px;
+            font-weight: 600;
+            line-height: 1.3;
+        }}
+        .content-body p {{
+            margin: 0 0 16px;
             color: #cbd5e1;
-            background-color: #0f172a;
-            margin: 0;
-            padding: 0;
+            font-size: 15px;
+            line-height: 1.6;
         }}
-        .container {{
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #1e293b;
-        }}
-        .header {{
-            text-align: center;
-            padding: 20px 0;
-            border-bottom: 2px solid #34d399;
-        }}
-        .header h1 {{
+        .content-body a {{
             color: #34d399;
-            margin: 0;
-            font-size: 24px;
         }}
-        .content {{
-            padding: 30px 20px;
+        .content-body strong {{
+            color: #e2e8f0;
         }}
         .highlight {{
             background-color: #0f172a;
-            border-left: 4px solid #34d399;
-            padding: 15px;
+            border-radius: 14px;
+            padding: 20px;
             margin: 20px 0;
         }}
-        .success {{
-            border-left-color: #28a745;
+        .highlight p:last-child {{
+            margin-bottom: 0;
         }}
-        .warning {{
-            border-left-color: #ffc107;
+        .highlight.success {{
+            border: 1px solid #34d399;
         }}
-        .danger {{
-            border-left-color: #dc3545;
+        .highlight.warning {{
+            border: 1px solid #fbbf24;
+        }}
+        .highlight.danger {{
+            border: 1px solid #f87171;
         }}
         .button {{
             display: inline-block;
-            padding: 12px 24px;
+            padding: 14px 32px;
             background-color: #34d399;
             color: #022c22 !important;
             text-decoration: none;
-            border-radius: 5px;
-            margin: 20px 0;
-            font-weight: bold;
-        }}
-        .button:hover {{
-            background-color: #059669;
-        }}
-        .footer {{
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #334155;
-            font-size: 12px;
-            color: #94a3b8;
-            text-align: center;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 15px;
         }}
         .amount {{
             font-size: 24px;
             font-weight: bold;
-            color: #28a745;
+            color: #34d399;
         }}
         .amount.negative {{
-            color: #dc3545;
+            color: #f87171;
         }}
     </style>
 </head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>{self.service_name}</h1>
-        </div>
-        <div class="content">
-            {content}
-        </div>
-        <div class="footer">
-            <p>&copy; {self.service_name}</p>
-            <p>{footer_text}</p>
-            {unsubscribe_block}
-        </div>
-    </div>
+<body style="margin:0; padding:0; background-color:#0f172a; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#0f172a; padding:32px 16px;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px; background-color:#1e293b; border-radius:20px; overflow:hidden;">
+
+                    <tr>
+                        <td style="padding:32px 32px 8px; text-align:center;">
+                            <span style="font-size:20px; font-weight:700; color:#ffffff;">{html.escape(self.service_name)}</span>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td class="content-body" style="padding:16px 32px 0;">
+                            {content}
+                        </td>
+                    </tr>
+{support_row}
+
+                    <tr>
+                        <td style="padding:24px 32px 28px; border-top:1px solid #334155; text-align:center;">
+                            <p style="margin:0; font-size:12px; color:#64748b;">&copy; {html.escape(self.service_name)}</p>
+                            <p style="margin:8px 0 0; font-size:12px; color:#64748b;">{footer_text}</p>
+                            {unsubscribe_block}
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>
 """
