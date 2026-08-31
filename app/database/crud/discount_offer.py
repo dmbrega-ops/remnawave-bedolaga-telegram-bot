@@ -64,6 +64,26 @@ async def upsert_discount_offer(
 
     await db.commit()
     await db.refresh(offer)
+
+    try:
+        await log_promo_offer_action(
+            db,
+            user_id=offer.user_id,
+            offer_id=offer.id,
+            action='sent',
+            source=offer.notification_type,
+            percent=offer.discount_percent,
+            effect_type=offer.effect_type,
+        )
+    except Exception as exc:  # pragma: no cover - defensive logging
+        logger.warning('Failed to record promo offer sent log for offer', offer_id=offer.id, exc=exc)
+        try:
+            await db.rollback()
+        except Exception as rollback_error:  # pragma: no cover - defensive logging
+            logger.warning(
+                'Failed to rollback session after promo offer sent log failure', rollback_error=rollback_error
+            )
+
     return offer
 
 

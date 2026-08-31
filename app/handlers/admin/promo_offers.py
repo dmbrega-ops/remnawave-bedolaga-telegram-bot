@@ -90,6 +90,7 @@ async def _clear_promo_offer_search_prompt(state: FSMContext, bot) -> None:
 
 
 ACTION_LABEL_KEYS = {
+    'sent': 'ADMIN_PROMO_OFFER_LOGS_ACTION_SENT',
     'claimed': 'ADMIN_PROMO_OFFER_LOGS_ACTION_CLAIMED',
     'consumed': 'ADMIN_PROMO_OFFER_LOGS_ACTION_CONSUMED',
     'disabled': 'ADMIN_PROMO_OFFER_LOGS_ACTION_DISABLED',
