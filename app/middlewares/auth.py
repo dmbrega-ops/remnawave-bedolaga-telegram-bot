@@ -13,6 +13,7 @@ from sqlalchemy.exc import InterfaceError, OperationalError
 from app.config import settings
 from app.database.crud.user import get_user_by_telegram_id
 from app.database.database import AsyncSessionLocal
+from app.external.remnawave_api import RemnaWaveAPIError, is_user_not_found_error
 from app.services.remnawave_service import RemnaWaveService
 from app.states import RegistrationStates
 from app.utils.check_reg_process import is_registration_process
@@ -42,7 +43,17 @@ async def _refresh_remnawave_description(remnawave_id: int, description: str, te
             await api.update_user(user_id=remnawave_id, description=description)
         logger.info('✅ [Middleware] Описание пользователя обновлено в RemnaWave', telegram_id=telegram_id)
     except Exception as remnawave_error:
-        logger.error(
+        # «User not found» здесь не error: панель-юзера могли удалить (протухший
+        # remnawave_id), это лишь фоновое обновление описания, а не критичный
+        # флоу. Как и везде в кодовой базе (is_user_not_found_error), понижаем до
+        # warning — иначе error-логи форвардятся в админ-чат при каждом входе
+        # такого пользователя.
+        log = (
+            logger.warning
+            if isinstance(remnawave_error, RemnaWaveAPIError) and is_user_not_found_error(remnawave_error)
+            else logger.error
+        )
+        log(
             '❌ [Middleware] Ошибка обновления описания пользователя в RemnaWave',
             telegram_id=telegram_id,
             remnawave_error=remnawave_error,
