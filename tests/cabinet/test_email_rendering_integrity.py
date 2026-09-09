@@ -165,7 +165,9 @@ def test_wrap_fragment_gets_base_template_once():
     wrapped = templates._wrap_override_template('<h2>Привет</h2><p>текст</p>', 'ru')
     _assert_single_document(wrapped, 'tier-3 fragment')
     assert '<h2>Привет</h2>' in wrapped
-    assert 'class="footer"' in wrapped
+    # Ponteto fork: premailer (remove_classes=True) strips the layout's class="footer";
+    # the built-in footer text proves the fragment was wrapped in the base template.
+    assert 'Это автоматическое сообщение' in wrapped
 
 
 def test_wrap_styled_fragment_gets_minimal_wrapper():

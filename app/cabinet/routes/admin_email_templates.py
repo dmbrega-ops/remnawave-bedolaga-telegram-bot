@@ -483,6 +483,23 @@ TEMPLATE_TYPES = [
         'context_vars': ['username', 'code', 'expire_minutes'],
     },
     {
+        # Ponteto: passwordless email login (magic link).
+        'type': 'magic_link',
+        'label': {
+            'ru': 'Ссылка для входа',
+            'en': 'Magic Link',
+            'zh': '登录链接',
+            'ua': 'Посилання для входу',
+        },
+        'description': {
+            'ru': 'Письмо со ссылкой для входа без пароля',
+            'en': 'Passwordless sign-in link email',
+            'zh': '无需密码的登录链接邮件',
+            'ua': 'Лист із посиланням для входу без пароля',
+        },
+        'context_vars': ['username', 'login_url', 'expire_minutes'],
+    },
+    {
         'type': 'partner_application_approved',
         'label': {
             'ru': 'Партнёрство одобрено',
@@ -777,6 +794,7 @@ SAMPLE_CONTEXTS: dict[str, dict[str, Any]] = {
     },
     'password_reset': {'username': 'John', 'reset_url': 'https://example.com/reset?token=abc123', 'expire_hours': 1},
     'email_change_code': {'username': 'John', 'code': '123456', 'expire_minutes': 10},
+    'magic_link': {'username': 'John', 'login_url': 'https://example.com/login?token=abc123', 'expire_minutes': 15},
     'partner_application_approved': {'commission_percent': 20, 'comment': 'Welcome aboard!'},
     'partner_application_rejected': {'comment': 'Not enough details provided'},
     'withdrawal_approved': {'formatted_amount': '1000.00 ₽', 'amount_rubles': 1000, 'comment': 'Processed'},
