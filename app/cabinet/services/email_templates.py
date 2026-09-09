@@ -5,6 +5,7 @@ Supports multiple languages: ru, en, zh, ua, fa
 """
 
 import html
+from collections.abc import Callable
 from functools import partial
 
 from premailer import transform
@@ -16,31 +17,48 @@ from app.config import settings
 class EmailNotificationTemplates:
     """HTML email templates for user notifications."""
 
+    # Плейсхолдеры получателя, которые обёртка берёт из контекста письма.
+    _LAYOUT_RECIPIENT_VARS = ('username', 'email', 'date')
+
     def __init__(self):
         self.service_name = settings.SMTP_FROM_NAME or 'VPN Service'
         self.cabinet_url = getattr(settings, 'CABINET_URL', '')
+        # Контекст текущего рендера — чтобы обёртка знала получателя
+        # ({username}, {email}), не протаскивая его через все 50 билдеров.
+        self._render_context: dict[str, Any] | None = None
 
-    def get_template(
-        self,
-        notification_type: 'NotificationType',
-        language: str,
-        context: dict[str, Any],
-    ) -> dict[str, str] | None:
-        """
-        Get email template for notification type.
+    # WEBHOOK_* уведомления делят один generic-билдер: значение типа -> ключ
+    # копирайта в WEBHOOK_EMAIL_COPY. Ключи — строки, а не enum: NotificationType
+    # импортируется лениво (цикл модулей), а редактору этот список нужен на
+    # уровне класса, чтобы собирать свои записи из тех же текстов.
+    WEBHOOK_EMAIL_KINDS: dict[str, str] = {
+        'webhook_sub_expired': 'sub_expired',
+        'webhook_sub_disabled': 'sub_disabled',
+        'webhook_sub_enabled': 'sub_enabled',
+        'webhook_sub_limited': 'sub_limited',
+        'webhook_sub_traffic_reset': 'sub_traffic_reset',
+        'webhook_sub_deleted': 'sub_deleted',
+        'webhook_sub_revoked': 'sub_revoked',
+        'webhook_sub_expiring': 'sub_expiring',
+        'webhook_sub_first_connected': 'sub_first_connected',
+        'webhook_sub_bandwidth_threshold': 'sub_bandwidth_threshold',
+        'webhook_user_not_connected': 'user_not_connected',
+        'webhook_device_added': 'device_added',
+        'webhook_device_deleted': 'device_deleted',
+        'webhook_torrent_detected': 'torrent_detected',
+    }
 
-        Args:
-            notification_type: Type of notification
-            language: Language code (ru, en, zh, ua, fa)
-            context: Context data for template rendering
+    def _template_map(self) -> dict['NotificationType', Callable[[str, dict[str, Any]], dict[str, str]]]:
+        """Тип уведомления -> билдер письма. Единственный реестр email-шаблонов.
 
-        Returns:
-            Dict with 'subject', 'body_html', and optionally 'body_text'
+        Список типов в редакторе админки строится отсюда же (supported_types):
+        рукописная копия рядом отставала, и письма уходили со стандартным
+        шаблоном, который нельзя было поменять.
         """
         # Import here to avoid circular imports
         from app.services.notification_delivery_service import NotificationType
 
-        template_map = {
+        template_map: dict[NotificationType, Callable[[str, dict[str, Any]], dict[str, str]]] = {
             NotificationType.BALANCE_TOPUP: self._balance_topup_template,
             NotificationType.BALANCE_CHANGE: self._balance_change_template,
             NotificationType.SUBSCRIPTION_EXPIRING: self._subscription_expiring_template,
@@ -66,6 +84,7 @@ class EmailNotificationTemplates:
             NotificationType.WITHDRAWAL_REJECTED: self._withdrawal_rejected_template,
             NotificationType.TRAFFIC_RESET: self._traffic_reset_template,
             NotificationType.PAYMENT_RECEIVED: self._payment_received_template,
+            NotificationType.NALOGO_RECEIPT: self._nalogo_receipt_template,
             NotificationType.PROMO_OFFER: self._promo_offer_template,
             NotificationType.TICKET_REPLY: self._ticket_reply_template,
             NotificationType.EMAIL_VERIFICATION: self._email_verification_template,
@@ -76,36 +95,57 @@ class EmailNotificationTemplates:
             NotificationType.GUEST_ACTIVATION_REQUIRED: self._guest_activation_required_template,
             NotificationType.GUEST_GIFT_RECEIVED: self._guest_gift_received_template,
             NotificationType.GUEST_CABINET_CREDENTIALS: self._guest_cabinet_credentials_template,
+            NotificationType.GUEST_GIFT_LINK_BUYER: self._guest_gift_link_buyer_template,
         }
-
-        # WEBHOOK_* уведомления делят один generic-билдер: тип -> ключ копирайта.
-        webhook_email_kinds = {
-            NotificationType.WEBHOOK_SUB_EXPIRED: 'sub_expired',
-            NotificationType.WEBHOOK_SUB_DISABLED: 'sub_disabled',
-            NotificationType.WEBHOOK_SUB_ENABLED: 'sub_enabled',
-            NotificationType.WEBHOOK_SUB_LIMITED: 'sub_limited',
-            NotificationType.WEBHOOK_SUB_TRAFFIC_RESET: 'sub_traffic_reset',
-            NotificationType.WEBHOOK_SUB_DELETED: 'sub_deleted',
-            NotificationType.WEBHOOK_SUB_REVOKED: 'sub_revoked',
-            NotificationType.WEBHOOK_SUB_EXPIRING: 'sub_expiring',
-            NotificationType.WEBHOOK_SUB_FIRST_CONNECTED: 'sub_first_connected',
-            NotificationType.WEBHOOK_SUB_BANDWIDTH_THRESHOLD: 'sub_bandwidth_threshold',
-            NotificationType.WEBHOOK_USER_NOT_CONNECTED: 'user_not_connected',
-            NotificationType.WEBHOOK_DEVICE_ADDED: 'device_added',
-            NotificationType.WEBHOOK_DEVICE_DELETED: 'device_deleted',
-            NotificationType.WEBHOOK_TORRENT_DETECTED: 'torrent_detected',
+        webhook_map = {
+            NotificationType(type_value): partial(self._webhook_event_email, kind)
+            for type_value, kind in self.WEBHOOK_EMAIL_KINDS.items()
         }
-        for webhook_type, webhook_kind in webhook_email_kinds.items():
-            template_map[webhook_type] = partial(self._webhook_event_email, webhook_kind)
+        return {**template_map, **webhook_map}
 
-        template_func = template_map.get(notification_type)
+    def supported_types(self) -> list['NotificationType']:
+        """Типы, у которых есть email-шаблон, — источник истины для списка редактора."""
+        return list(self._template_map())
+
+    def get_template(
+        self,
+        notification_type: 'NotificationType',
+        language: str,
+        context: dict[str, Any],
+    ) -> dict[str, str] | None:
+        """
+        Get email template for notification type.
+
+        Args:
+            notification_type: Type of notification
+            language: Language code (ru, en, zh, ua, fa)
+            context: Context data for template rendering
+
+        Returns:
+            Dict with 'subject', 'body_html', and optionally 'body_text'
+        """
+        template_func = self._template_map().get(notification_type)
         if not template_func:
             return None
 
-        return template_func(language, context)
+        self._render_context = context
+        try:
+            return template_func(language, context)
+        finally:
+            self._render_context = None
 
-    def _wrap_override_template(self, content: str, language: str = 'ru') -> str:
+    def _wrap_override_template(
+        self,
+        content: str,
+        language: str = 'ru',
+        *,
+        unsubscribe_url: str = '',
+        context: dict[str, Any] | None = None,
+    ) -> str:
         """Wrap override template content appropriately based on its structure.
+
+        ``unsubscribe_url`` и ``context`` (данные получателя) нужны только
+        обёртке третьего уровня — у полного документа всё уже внутри.
 
         Three-tier detection:
         1. Full HTML document (<!DOCTYPE or <html>) — return as-is, no wrapping
@@ -142,15 +182,11 @@ class EmailNotificationTemplates:
             )
 
         # Tier 3: Simple HTML fragment — use base template for structure
-        return self._get_base_template(content, language)
-
-    _UNSUBSCRIBE_TEXTS = {
-        'ru': 'Отписаться от рассылок',
-        'en': 'Unsubscribe from marketing emails',
-        'zh': '退订营销邮件',
-        'ua': 'Відписатися від розсилок',
-        'fa': 'لغو اشتراک ایمیل‌های تبلیغاتی',
-    }
+        self._render_context = context
+        try:
+            return self._get_base_template(content, language, unsubscribe_url)
+        finally:
+            self._render_context = None
 
     _SUPPORT_TITLE_TEXTS = {
         'ru': 'Нужна помощь?',
@@ -226,139 +262,33 @@ class EmailNotificationTemplates:
                 </table>"""
 
     def _get_base_template(self, content: str, language: str = 'ru', unsubscribe_url: str = '') -> str:
-        """Wrap content in base HTML template.
+        """Wrap content in the email layout — сохранённая в редакторе обёртка, иначе встроенная.
 
-        Table-based layout with the brand's dark/green style: Gmail strips
-        ``<style>`` from ``<head>``, so ``premailer.transform(..., keep_style_tags=False)``
-        below inlines everything before send — that fix is load-bearing for
-        Gmail dark mode (invisible text otherwise) and must stay applied here.
+        The layout comes from the admin editor (or the built-in default) and its
+        CSS lives in a ``<style>`` block; Gmail strips ``<style>`` from ``<head>``,
+        so ``premailer.transform(..., keep_style_tags=False)`` inlines everything
+        before send. That fix is load-bearing for Gmail dark mode (invisible text
+        otherwise) and must stay applied here, whatever layout is resolved.
 
         ``unsubscribe_url`` непустой только у маркетинговых писем — у писем со
         сбросом пароля или чеком отписке взяться неоткуда.
         """
-        footer_texts = {
-            'ru': 'Это автоматическое сообщение. Пожалуйста, не отвечайте на это письмо.',
-            'en': 'This is an automated message. Please do not reply to this email.',
-            'zh': '这是一封自动发送的邮件，请勿回复。',
-            'ua': 'Це автоматичне повідомлення. Будь ласка, не відповідайте на цей лист.',
-            'fa': 'این یک پیام خودکار است. لطفاً به این ایمیل پاسخ ندهید.',
+        from .email_layout import render_email_layout, resolve_email_layout
+
+        recipient = {
+            key: value
+            for key, value in (self._render_context or {}).items()
+            if key in self._LAYOUT_RECIPIENT_VARS and value not in (None, '')
         }
-        footer_text = footer_texts.get(language, footer_texts['ru'])
-
-        unsubscribe_block = ''
-        if unsubscribe_url:
-            unsubscribe_label = self._UNSUBSCRIBE_TEXTS.get(language, self._UNSUBSCRIBE_TEXTS['ru'])
-            unsubscribe_block = (
-                f'<p style="margin:8px 0 0;"><a href="{html.escape(unsubscribe_url, quote=True)}" '
-                f'style="color:#64748b;">{unsubscribe_label}</a></p>'
-            )
-
-        support_block = self._get_support_block(language)
-        support_row = ''
-        if support_block:
-            support_row = f'<tr><td style="padding:28px 32px 0;">{support_block}</td></tr>'
-
-        html_doc = f"""
-<!DOCTYPE html>
-<html lang="{html.escape(language, quote=True)}">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{html.escape(self.service_name)}</title>
-    <style>
-        .content-body h2 {{
-            margin: 0 0 16px;
-            color: #ffffff;
-            font-size: 20px;
-            font-weight: 600;
-            line-height: 1.3;
-        }}
-        .content-body p {{
-            margin: 0 0 16px;
-            color: #cbd5e1;
-            font-size: 15px;
-            line-height: 1.6;
-        }}
-        .content-body a {{
-            color: #34d399;
-        }}
-        .content-body strong {{
-            color: #e2e8f0;
-        }}
-        .highlight {{
-            background-color: #0f172a;
-            border-radius: 14px;
-            padding: 20px;
-            margin: 20px 0;
-        }}
-        .highlight p:last-child {{
-            margin-bottom: 0;
-        }}
-        .highlight.success {{
-            border: 1px solid #34d399;
-        }}
-        .highlight.warning {{
-            border: 1px solid #fbbf24;
-        }}
-        .highlight.danger {{
-            border: 1px solid #f87171;
-        }}
-        .button {{
-            display: inline-block;
-            padding: 14px 32px;
-            background-color: #34d399;
-            color: #022c22 !important;
-            text-decoration: none;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 15px;
-        }}
-        .amount {{
-            font-size: 24px;
-            font-weight: bold;
-            color: #34d399;
-        }}
-        .amount.negative {{
-            color: #f87171;
-        }}
-    </style>
-</head>
-<body style="margin:0; padding:0; background-color:#0f172a; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#0f172a; padding:32px 16px;">
-        <tr>
-            <td align="center">
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px; background-color:#1e293b; border-radius:20px; overflow:hidden;">
-
-                    <tr>
-                        <td style="padding:32px 32px 8px; text-align:center;">
-                            <span style="font-size:20px; font-weight:700; color:#ffffff;">{html.escape(self.service_name)}</span>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td class="content-body" style="padding:16px 32px 0;">
-                            {content}
-                        </td>
-                    </tr>
-{support_row}
-
-                    <tr>
-                        <td style="padding:24px 32px 28px; border-top:1px solid #334155; text-align:center;">
-                            <p style="margin:0; font-size:12px; color:#64748b;">&copy; {html.escape(self.service_name)}</p>
-                            <p style="margin:8px 0 0; font-size:12px; color:#64748b;">{footer_text}</p>
-                            {unsubscribe_block}
-                        </td>
-                    </tr>
-
-                </table>
-            </td>
-        </tr>
-    </table>
-</body>
-</html>
-"""
+        rendered = render_email_layout(
+            resolve_email_layout(language),
+            language,
+            {**recipient, 'content': content, 'unsubscribe_url': unsubscribe_url, 'service_name': self.service_name},
+        )
+        # Ponteto: Gmail strips <style> from <head>; premailer inlines everything
+        # before send — load-bearing for Gmail dark mode (invisible text otherwise).
         return transform(
-            html_doc,
+            rendered,
             keep_style_tags=False,
             remove_classes=True,
             disable_validation=True,
@@ -380,6 +310,86 @@ class EmailNotificationTemplates:
         text = texts.get(language, texts['en'])
 
         return f'<p style="text-align: center;"><a href="{self.cabinet_url}" class="button">{text}</a></p>'
+
+    def _link_button(self, url: str, language: str, texts: dict[str, str]) -> str:
+        """Кнопка с произвольной ссылкой в том же стиле, что кнопка кабинета."""
+        if not url:
+            return ''
+        text = texts.get(language, texts['en'])
+        return f'<p style="text-align: center;"><a href="{html.escape(url, quote=True)}" class="button">{text}</a></p>'
+
+    def _nalogo_receipt_template(self, language: str, context: dict[str, Any]) -> dict[str, str]:
+        """Email: чек NaloGO («Мой налог») по платежу — файл во вложении, ссылка запасная."""
+        amount = html.escape(str(context.get('amount', '')))
+        receipt_url = html.escape(str(context.get('receipt_url', '')), quote=True)
+        has_attachment = bool(context.get('has_attachment'))
+        subjects = {
+            'ru': 'Чек по вашему платежу',
+            'en': 'Receipt for your payment',
+            'zh': '您的付款收据',
+            'ua': 'Чек за вашим платежем',
+        }
+        attachment_lines = {
+            'ru': '<p>Файл чека — во вложении к этому письму.</p>',
+            'en': '<p>The receipt file is attached to this email.</p>',
+            'zh': '<p>收据文件已附在本邮件中。</p>',
+            'ua': '<p>Файл чека — у вкладенні до цього листа.</p>',
+        }
+        attachment = {lang: line if has_attachment else '' for lang, line in attachment_lines.items()}
+        bodies = {
+            'ru': f'<h2>🧾 Чек по вашему платежу сформирован</h2><div class="highlight"><p>💰 Сумма: <strong>{amount}</strong></p><p>Чек зарегистрирован в ФНС через сервис «Мой налог».</p>{attachment["ru"]}</div><p><a href="{receipt_url}">Открыть чек на сайте ФНС</a> (ссылка может не открываться при включённом VPN или из-за рубежа).</p>',
+            'en': f'<h2>🧾 Your payment receipt is ready</h2><div class="highlight"><p>💰 Amount: <strong>{amount}</strong></p><p>The receipt is registered with the Russian tax service (“Moy Nalog”).</p>{attachment["en"]}</div><p><a href="{receipt_url}">Open the receipt on the tax service website</a> (the link may not open with VPN on or from abroad).</p>',
+            'zh': f'<h2>🧾 您的付款收据已生成</h2><div class="highlight"><p>💰 金额：<strong>{amount}</strong></p><p>收据已通过“Мой налог”服务在俄罗斯税务局登记。</p>{attachment["zh"]}</div><p><a href="{receipt_url}">在税务局网站打开收据</a>（开启 VPN 或在境外时链接可能无法打开）。</p>',
+            'ua': f'<h2>🧾 Чек за вашим платежем сформовано</h2><div class="highlight"><p>💰 Сума: <strong>{amount}</strong></p><p>Чек зареєстровано у ФНС через сервіс «Мой налог».</p>{attachment["ua"]}</div><p><a href="{receipt_url}">Відкрити чек на сайті ФНС</a> (посилання може не відкриватися з увімкненим VPN або з-за кордону).</p>',
+        }
+        return {
+            'subject': subjects.get(language, subjects['ru']),
+            'body_html': self._get_base_template(bodies.get(language, bodies['ru']), language),
+        }
+
+    def _guest_gift_link_buyer_template(self, language: str, context: dict[str, Any]) -> dict[str, str]:
+        """Email покупателю подарка: ссылка на активацию, чтобы переслать получателю."""
+        claim_url = str(context.get('claim_url', '') or '')
+        claim_url_html = html.escape(claim_url, quote=True)
+        tariff_name = html.escape(str(context.get('tariff_name', '') or ''))
+        period_days = context.get('period_days')
+        subjects = {
+            'ru': 'Ссылка на ваш подарок',
+            'en': 'Your gift link',
+            'zh': '您的礼物链接',
+            'ua': 'Посилання на ваш подарунок',
+        }
+        details = {
+            'ru': f'<p>Подарок: <strong>{tariff_name}</strong>{f" на {period_days} дн." if period_days else ""}</p>'
+            if tariff_name
+            else '',
+            'en': f'<p>Gift: <strong>{tariff_name}</strong>{f" for {period_days} days" if period_days else ""}</p>'
+            if tariff_name
+            else '',
+            'zh': f'<p>礼物：<strong>{tariff_name}</strong>{f"，{period_days} 天" if period_days else ""}</p>'
+            if tariff_name
+            else '',
+            'ua': f'<p>Подарунок: <strong>{tariff_name}</strong>{f" на {period_days} дн." if period_days else ""}</p>'
+            if tariff_name
+            else '',
+        }
+        button = {
+            'ru': 'Открыть ссылку на подарок',
+            'en': 'Open gift link',
+            'zh': '打开礼物链接',
+            'ua': 'Відкрити посилання на подарунок',
+        }
+        link = f'<p><a href="{claim_url_html}">{claim_url_html}</a></p>'
+        bodies = {
+            'ru': f'<h2>🎁 Спасибо за покупку подарка!</h2><div class="highlight">{details["ru"]}<p>Перешлите эту ссылку тому, кому предназначен подарок, — он активирует его сам:</p>{link}</div>{self._link_button(claim_url, language, button)}',
+            'en': f'<h2>🎁 Thanks for your gift purchase!</h2><div class="highlight">{details["en"]}<p>Forward this link to the person the gift is for — they activate it themselves:</p>{link}</div>{self._link_button(claim_url, language, button)}',
+            'zh': f'<h2>🎁 感谢您购买礼物！</h2><div class="highlight">{details["zh"]}<p>请将此链接转发给收礼人，由其自行激活：</p>{link}</div>{self._link_button(claim_url, language, button)}',
+            'ua': f'<h2>🎁 Дякуємо за покупку подарунка!</h2><div class="highlight">{details["ua"]}<p>Перешліть це посилання тому, кому призначено подарунок, — він активує його сам:</p>{link}</div>{self._link_button(claim_url, language, button)}',
+        }
+        return {
+            'subject': subjects.get(language, subjects['ru']),
+            'body_html': self._get_base_template(bodies.get(language, bodies['ru']), language),
+        }
 
     # ============================================================================
     # Balance Templates
@@ -669,7 +679,7 @@ class EmailNotificationTemplates:
             'body_html': self._get_base_template(bodies.get(language, bodies['ru']), language),
         }
 
-    _WEBHOOK_EMAIL_COPY = {
+    WEBHOOK_EMAIL_COPY = {
         'sub_expired': {
             'zh': (
                 '订阅已到期',
@@ -908,7 +918,7 @@ class EmailNotificationTemplates:
         so email was silently skipped. This covers all of them.
         """
         lang = language if language in ('ru', 'en', 'zh', 'ua') else 'ru'
-        copy = self._WEBHOOK_EMAIL_COPY.get(kind, self._WEBHOOK_EMAIL_COPY['user_not_connected'])
+        copy = self.WEBHOOK_EMAIL_COPY.get(kind, self.WEBHOOK_EMAIL_COPY['user_not_connected'])
         subject, body = copy.get(lang, copy['ru'])
 
         device = str(context.get('device') or context.get('device_name') or '').strip()
