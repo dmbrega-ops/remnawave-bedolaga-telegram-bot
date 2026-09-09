@@ -18,6 +18,7 @@ from app.database.models import (
     BroadcastHistory,
     DiscountOffer,
     PromoGroup,
+    PromoOfferLog,
     Subscription,
     SubscriptionEvent,
     SubscriptionStatus,
@@ -36,6 +37,9 @@ PROMO_TABLES = (
     PromoGroup.__table__,
     DiscountOffer.__table__,
     BroadcastHistory.__table__,
+    # Ponteto: promo offer sends are logged immediately, so the broadcast path
+    # writes to promo_offer_logs.
+    PromoOfferLog.__table__,
 )
 
 
