@@ -334,6 +334,14 @@ async def main():
 
         await email_retry_service.start()
 
+        # Warm the email-layout cache at startup: until it is loaded, the first
+        # renders after a restart (editor preview, test email, and the default
+        # notification path before any send) fall back to the built-in light
+        # layout instead of the saved dark wrapper.
+        from app.cabinet.services.email_layout import refresh_email_layout_cache
+
+        await refresh_email_layout_cache(force=True)
+
         from app.services.channel_subscription_service import channel_subscription_service
 
         channel_subscription_service.bot = bot
