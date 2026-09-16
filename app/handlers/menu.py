@@ -23,6 +23,7 @@ from app.keyboards.inline import (
     get_info_menu_keyboard,
     get_language_selection_keyboard,
     get_main_menu_keyboard_async,
+    get_more_menu_keyboard,
 )
 from app.localization.texts import get_rules, get_texts
 from app.services.faq_service import FaqService
@@ -1223,6 +1224,31 @@ async def process_language_change(
     await callback.answer(texts.t('LANGUAGE_SELECTED', '🌐 Язык интерфейса обновлен.'))
 
 
+async def show_more_menu(callback: types.CallbackQuery, db_user: User, db: AsyncSession):
+    """Подэкран «☰ Ещё»: второстепенные пункты, вынесенные с главного экрана."""
+    if db_user is None:
+        texts = get_texts(settings.DEFAULT_LANGUAGE)
+        await callback.answer(
+            texts.t('USER_NOT_FOUND_ERROR', 'Ошибка: пользователь не найден.'),
+            show_alert=True,
+        )
+        return
+
+    texts = get_texts(db_user.language)
+    header = texts.t('MENU_MORE_HEADER', '☰ <b>Ещё</b>')
+
+    await edit_or_answer_photo(
+        callback=callback,
+        caption=header,
+        keyboard=get_more_menu_keyboard(
+            language=db_user.language,
+            balance_kopeks=db_user.balance_kopeks,
+        ),
+        parse_mode='HTML',
+    )
+    await callback.answer()
+
+
 async def handle_back_to_menu(callback: types.CallbackQuery, state: FSMContext, db_user: User, db: AsyncSession):
     if db_user is None:
         # Пользователь не найден, используем язык по умолчанию
@@ -1737,6 +1763,7 @@ async def handle_activate_button(callback: types.CallbackQuery, db_user: User, d
 
 def register_handlers(dp: Dispatcher):
     dp.callback_query.register(handle_back_to_menu, F.data == 'back_to_menu')
+    dp.callback_query.register(show_more_menu, F.data == 'menu_more')
 
     dp.callback_query.register(
         handle_profile_unavailable,
