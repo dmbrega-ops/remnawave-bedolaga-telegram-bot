@@ -292,8 +292,13 @@ async def get_subscription_info_text(subscription, texts, db_user, db: AsyncSess
         devices_used = await get_current_devices_count(db_user)
     else:
         devices_used = 0
-    countries_info = await _get_countries_info(subscription.connected_squads)
-    ', '.join([c['name'] for c in countries_info]) if countries_info else 'Нет'
+    # «Стран» — количество РЕАЛЬНЫХ гео-локаций (country_code), а не сквадов:
+    # несколько внутренних сквадов (балансировка/резерв) могут указывать на одну
+    # и ту же страну (см. тот же фикс в purchase.py:handle_subscription_settings).
+    connected_squads = subscription.connected_squads or []
+    countries_info = await _get_countries_info(connected_squads)
+    distinct_country_codes = {c['country_code'] for c in countries_info if c.get('country_code')}
+    countries_count = len(distinct_country_codes) if distinct_country_codes else len(connected_squads)
 
     subscription_url = getattr(subscription, 'subscription_url', None) or 'Генерируется...'
 
@@ -338,7 +343,7 @@ async def get_subscription_info_text(subscription, texts, db_user, db: AsyncSess
         days_left=max(0, subscription.days_left),
         traffic_used=texts.format_traffic(subscription.traffic_used_gb, is_limit=False),
         traffic_limit=traffic_text,
-        countries_count=len(subscription.connected_squads or []),
+        countries_count=countries_count,
         devices_used=devices_used,
         devices_limit=subscription.device_limit,
         autopay_status='✅ Включен' if subscription.autopay_enabled else '⌛ Выключен',

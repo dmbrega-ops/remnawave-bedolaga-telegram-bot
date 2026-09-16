@@ -169,7 +169,9 @@ async def show_my_subscriptions(
         return
 
     texts = get_texts(db_user.language)
-    gift_enabled = True
+    from app.services.gift_purchase_service import is_gift_enabled
+
+    gift_enabled = await is_gift_enabled(db)
     subscriptions = await get_all_subscriptions_by_user_id(db, db_user.id)
 
     if not subscriptions:

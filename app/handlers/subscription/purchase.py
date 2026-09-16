@@ -135,6 +135,7 @@ from .common import _get_promo_offer_discount_percent, update_traffic_prices
 from .countries import (
     _build_countries_selection_text,
     _get_available_countries,
+    _get_countries_info,
     _get_preselected_free_countries,
     _should_show_countries_management,
     apply_countries_changes,
@@ -203,7 +204,9 @@ async def show_subscription_info(callback: types.CallbackQuery, db_user: User, d
     await db.refresh(db_user)
 
     texts = get_texts(db_user.language)
-    gift_enabled = True
+    from app.services.gift_purchase_service import is_gift_enabled
+
+    gift_enabled = await is_gift_enabled(db)
     # Multi-tariff: this branch is only reached in single-tariff mode (multi-tariff
     # is redirected to show_my_subscriptions above). db_user.subscription returns
     # the first active or most recent subscription, which is correct here.
@@ -2989,8 +2992,17 @@ async def handle_subscription_settings(callback: types.CallbackQuery, db_user: U
 
     devices_limit_display = Texts.format_device_limit(subscription.device_limit)
 
+    # «Стран» — это количество РЕАЛЬНЫХ гео-локаций (country_code), а не число
+    # подключённых сквадов: несколько внутренних сквадов (балансировка/резерв)
+    # могут указывать на одну и ту же страну, и старый len(connected_squads)
+    # это задваивал/затраивал (баг найден при живом тестировании 2026-09-16).
+    connected_squads = subscription.connected_squads or []
+    countries_info = await _get_countries_info(connected_squads)
+    distinct_country_codes = {c['country_code'] for c in countries_info if c.get('country_code')}
+    countries_count = len(distinct_country_codes) if distinct_country_codes else len(connected_squads)
+
     settings_text = settings_template.format(
-        countries_count=len(subscription.connected_squads or []),
+        countries_count=countries_count,
         traffic_used=texts.format_traffic(subscription.traffic_used_gb, is_limit=False),
         traffic_limit=texts.format_traffic(subscription.traffic_limit_gb, is_limit=True),
         devices_used=devices_used,

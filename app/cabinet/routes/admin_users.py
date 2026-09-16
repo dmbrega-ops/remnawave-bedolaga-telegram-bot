@@ -4090,6 +4090,23 @@ async def sync_user_from_panel(
             # Update remnawave_id if different
             # In multi-tariff mode the panel identity belongs to the subscription, not the user
             if not settings.is_multi_tariff_enabled() and user.remnawave_id != panel_user.id:
+                # Guard against ix_users_remnawave_id UniqueViolationError: the panel user
+                # found by telegram_id/email may already be linked to a DIFFERENT local
+                # account (e.g. a duplicate created by standalone email registration).
+                # Fail with a clear 409 instead of crashing the commit with a raw IntegrityError.
+                conflict_result = await db.execute(
+                    select(User.id).where(User.remnawave_id == panel_user.id, User.id != user.id)
+                )
+                conflicting_user_id = conflict_result.scalar_one_or_none()
+                if conflicting_user_id is not None:
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail=(
+                            f'Panel user {panel_user.id} is already linked to a different local '
+                            f'account (user_id={conflicting_user_id}). Likely a duplicate account '
+                            f'— merge the accounts before syncing.'
+                        ),
+                    )
                 changes['remnawave_id'] = {'old': user.remnawave_id, 'new': panel_user.id}
                 user.remnawave_id = panel_user.id
 
