@@ -215,6 +215,11 @@ async def show_main_menu(
         logger.error('Ошибка проверки сохраненной корзины для пользователя', db_user_id=db_user.id, error=e)
         has_saved_cart = False
 
+    if has_active_subscription and subscription_is_active:
+        # У пользователя уже есть рабочая подписка — не предлагаем вернуться
+        # к оформлению по протухшей Redis-корзине (баг обнаружен 2026-09-16).
+        has_saved_cart = False
+
     is_admin = settings.is_admin(db_user.telegram_id)
     is_moderator = (not is_admin) and SupportSettingsService.is_moderator(db_user.telegram_id)
 
@@ -1249,6 +1254,11 @@ async def handle_back_to_menu(callback: types.CallbackQuery, state: FSMContext, 
         has_saved_cart = await user_cart_service.has_user_cart(db_user.id)
     except Exception as e:
         logger.error('Ошибка проверки сохраненной корзины для пользователя', db_user_id=db_user.id, error=e)
+        has_saved_cart = False
+
+    if has_active_subscription and subscription_is_active:
+        # У пользователя уже есть рабочая подписка — не предлагаем вернуться
+        # к оформлению по протухшей Redis-корзине (баг обнаружен 2026-09-16).
         has_saved_cart = False
 
     is_admin = settings.is_admin(db_user.telegram_id)
