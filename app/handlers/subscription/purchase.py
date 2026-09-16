@@ -452,11 +452,10 @@ async def show_subscription_info(callback: types.CallbackQuery, db_user: User, d
             'SUBSCRIPTION_DAILY_OVERVIEW_TEMPLATE',
             """👤 {full_name}
 💰 Баланс: {balance}
-📱 Подписка: {status_emoji} {status_display}{warning}{tariff_info_block}
+📱 Подписка: {status_emoji} {status_display}{warning}
+📈 Трафик: {traffic}{tariff_info_block}
 
 📱 Информация о подписке
-🎭 Тип: {subscription_type}
-📈 Трафик: {traffic}
 🌍 Серверы: {servers}
 📱 Устройства: {devices_used} / {device_limit}""",
         )
@@ -465,13 +464,12 @@ async def show_subscription_info(callback: types.CallbackQuery, db_user: User, d
             'SUBSCRIPTION_OVERVIEW_TEMPLATE',
             """👤 {full_name}
 💰 Баланс: {balance}
-📱 Подписка: {status_emoji} {status_display}{warning}{tariff_info_block}
-
-📱 Информация о подписке
-🎭 Тип: {subscription_type}
+📱 Подписка: {status_emoji} {status_display}{warning}
 📅 Действует до: {end_date}
 ⏰ Осталось: {time_left}
-📈 Трафик: {traffic}
+📈 Трафик: {traffic}{tariff_info_block}
+
+📱 Информация о подписке
 🌍 Серверы: {servers}
 📱 Устройства: {devices_used} / {device_limit}""",
         )
