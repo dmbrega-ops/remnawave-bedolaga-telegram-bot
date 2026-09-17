@@ -1253,7 +1253,7 @@ def get_subscription_keyboard(
                             style='success',
                         ),
                         InlineKeyboardButton(
-                            text=texts.t('AUTOPAY_BUTTON', '💳 Автоплатеж'),
+                            text=strip_leading_emoji(texts.t('AUTOPAY_BUTTON', '💳 Автоплатеж')), icon_custom_emoji_id=BREGA_ICON['autopay'],
                             callback_data='subscription_autopay',
                         ),
                     ]
@@ -1262,7 +1262,7 @@ def get_subscription_keyboard(
             # Ряд: [Настройки] [Тариф] (если режим тарифов)
             settings_row = [
                 InlineKeyboardButton(
-                    text=texts.t('SUBSCRIPTION_SETTINGS_BUTTON', '⚙️ Настройки'),
+                    text=strip_leading_emoji(texts.t('SUBSCRIPTION_SETTINGS_BUTTON', '⚙️ Настройки')), icon_custom_emoji_id=BREGA_ICON['settings'],
                     callback_data='subscription_settings',
                 )
             ]
@@ -1325,7 +1325,7 @@ def get_subscription_keyboard(
         keyboard.append(
             [
                 InlineKeyboardButton(
-                    text=texts.t('GIFT_SUBSCRIPTION_BUTTON', '🎁 Подарить подписку'),
+                    text=strip_leading_emoji(texts.t('GIFT_SUBSCRIPTION_BUTTON', '🎁 Подарить подписку')), icon_custom_emoji_id=BREGA_ICON['gift'],
                     callback_data='subscription_gift',
                 )
             ]
@@ -3450,7 +3450,7 @@ def get_devices_management_keyboard(
     keyboard.append(
         [
             InlineKeyboardButton(
-                text=texts.t('RESET_ALL_DEVICES_BUTTON', '🔄 Сбросить все устройства'),
+                text=strip_leading_emoji(texts.t('RESET_ALL_DEVICES_BUTTON', '🔄 Сбросить все устройства')), icon_custom_emoji_id=BREGA_ICON['reset'],
                 callback_data='reset_all_devices',
                 style='danger',
             )
@@ -3506,7 +3506,7 @@ def get_updated_subscription_settings_keyboard(
         keyboard.append(
             [
                 InlineKeyboardButton(
-                    text=texts.t('RESET_TRAFFIC_BUTTON', '🔄 Сбросить трафик'),
+                    text=strip_leading_emoji(texts.t('RESET_TRAFFIC_BUTTON', '🔄 Сбросить трафик')), icon_custom_emoji_id=BREGA_ICON['reset'],
                     callback_data='subscription_reset_traffic',
                 )
             ]

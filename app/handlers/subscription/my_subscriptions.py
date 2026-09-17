@@ -19,6 +19,8 @@ from app.database.crud.subscription import (
 )
 from app.database.models import Subscription, SubscriptionStatus, User
 from app.localization.texts import Texts, get_texts
+from app.utils.brega_icons import BREGA_ICON
+from app.utils.miniapp_buttons import strip_leading_emoji
 
 
 logger = structlog.get_logger(__name__)
@@ -104,7 +106,7 @@ def _build_subscriptions_keyboard(
         buttons.append(
             [
                 types.InlineKeyboardButton(
-                    text=texts.t('GIFT_SUBSCRIPTION_BUTTON', '🎁 Подарить подписку'),
+                    text=strip_leading_emoji(texts.t('GIFT_SUBSCRIPTION_BUTTON', '🎁 Подарить подписку')), icon_custom_emoji_id=BREGA_ICON['gift'],
                     callback_data='subscription_gift',
                 )
             ]
@@ -183,7 +185,7 @@ async def show_my_subscriptions(
             buttons.append(
                 [
                     types.InlineKeyboardButton(
-                        text=texts.t('GIFT_SUBSCRIPTION_BUTTON', '🎁 Подарить подписку'),
+                        text=strip_leading_emoji(texts.t('GIFT_SUBSCRIPTION_BUTTON', '🎁 Подарить подписку')), icon_custom_emoji_id=BREGA_ICON['gift'],
                         callback_data='subscription_gift',
                     )
                 ]
