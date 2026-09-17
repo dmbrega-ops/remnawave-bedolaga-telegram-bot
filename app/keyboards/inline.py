@@ -911,7 +911,7 @@ def get_more_menu_keyboard(
     items.append(InlineKeyboardButton(text=strip_leading_emoji(texts.t('MENU_INFO', 'ℹ️ Инфо')), icon_custom_emoji_id=BREGA_ICON['info'], callback_data='menu_info'))
 
     if settings.is_language_selection_enabled():
-        items.append(InlineKeyboardButton(text=texts.MENU_LANGUAGE, callback_data='menu_language'))
+        items.append(InlineKeyboardButton(text=strip_leading_emoji(texts.MENU_LANGUAGE), icon_custom_emoji_id=BREGA_ICON['language'], callback_data='menu_language'))
 
     for i in range(0, len(items), 2):
         keyboard.append(items[i : i + 2])
@@ -3496,7 +3496,7 @@ def get_updated_subscription_settings_keyboard(
         keyboard.append(
             [
                 InlineKeyboardButton(
-                    text=texts.t('ADD_COUNTRIES_BUTTON', '🌐 Добавить страны'),
+                    text=strip_leading_emoji(texts.t('ADD_COUNTRIES_BUTTON', '🌐 Добавить страны')), icon_custom_emoji_id=BREGA_ICON['language'],
                     callback_data='subscription_add_countries',
                 )
             ]

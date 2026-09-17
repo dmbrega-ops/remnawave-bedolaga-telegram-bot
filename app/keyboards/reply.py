@@ -14,7 +14,10 @@ def get_main_reply_keyboard(language: str = 'ru') -> ReplyKeyboardMarkup:
             KeyboardButton(
                 text=strip_leading_emoji(texts.MENU_BALANCE), icon_custom_emoji_id=BREGA_ICON['balance']
             ),
-            KeyboardButton(text=texts.MENU_SUBSCRIPTION),
+            KeyboardButton(
+                text=strip_leading_emoji(texts.MENU_SUBSCRIPTION),
+                icon_custom_emoji_id=BREGA_ICON['subscription'],
+            ),
         ]
     ]
 
@@ -62,7 +65,11 @@ def get_nav_reply_keyboard(language: str = 'ru') -> ReplyKeyboardMarkup:
         keyboard=[
             [
                 KeyboardButton(text=labels['profile'], style='success'),
-                KeyboardButton(text=labels['subscription'], style='success'),
+                KeyboardButton(
+                    text=strip_leading_emoji(labels['subscription']),
+                    icon_custom_emoji_id=BREGA_ICON['subscription'],
+                    style='success',
+                ),
                 KeyboardButton(
                     text=strip_leading_emoji(labels['info']),
                     icon_custom_emoji_id=BREGA_ICON['info'],

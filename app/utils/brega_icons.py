@@ -28,6 +28,8 @@ BREGA_ICON: dict[str, str] = {
     'info': '5287752766041662409',     # ℹ️
     'list': '5287703605845990836',     # 📋
     'link': '5287348523719766280',     # 🔗 (a second 🔗 5287272137726403238 is spare)
+    'language': '5285405252881786680',    # 🌐 → Язык + Добавить страны
+    'subscription': '5287703223593903949',  # 📱 (2nd phone) → Подписка (distinct from 'devices')
 }
 
-# Still no home in the set (no matching button yet): 🗓 🌍 ✅ 🔓 ✉️ 📺 📡.
+# Still no home in the set (no matching button yet): 🗓 🌍 ✅ 🔓 ✉️ 📺 📡 🕒.
