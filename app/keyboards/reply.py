@@ -45,9 +45,9 @@ def get_nav_reply_keyboard(language: str = 'ru') -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
             [
-                KeyboardButton(text=labels['profile']),
-                KeyboardButton(text=labels['subscription']),
-                KeyboardButton(text=labels['info']),
+                KeyboardButton(text=labels['profile'], style='success'),
+                KeyboardButton(text=labels['subscription'], style='success'),
+                KeyboardButton(text=labels['info'], style='success'),
             ]
         ],
         resize_keyboard=True,

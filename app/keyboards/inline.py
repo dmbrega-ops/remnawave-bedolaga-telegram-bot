@@ -3415,7 +3415,11 @@ def get_devices_management_keyboard(
                     text=texts.t('DEVICE_RENAME_BUTTON', '✏️'),
                     callback_data=f'device_rename_{i}_{pagination.page}',
                 ),
-                InlineKeyboardButton(text=f'🔄 {device_info}', callback_data=f'reset_device_{i}_{pagination.page}'),
+                InlineKeyboardButton(
+                    text=f'🔄 {device_info}',
+                    callback_data=f'reset_device_{i}_{pagination.page}',
+                    style='danger',
+                ),
             ]
         )
 
@@ -3447,6 +3451,7 @@ def get_devices_management_keyboard(
             InlineKeyboardButton(
                 text=texts.t('RESET_ALL_DEVICES_BUTTON', '🔄 Сбросить все устройства'),
                 callback_data='reset_all_devices',
+                style='danger',
             )
         ]
     )
@@ -3460,6 +3465,7 @@ def get_devices_management_keyboard(
                 InlineKeyboardButton(
                     text=texts.t('SUBSCRIPTION_REVOKE_BTN', '🔄 Перевыпустить подписку'),
                     callback_data='subscription_revoke',
+                    style='danger',
                 )
             ]
         )
@@ -3556,6 +3562,7 @@ def get_device_reset_confirm_keyboard(
                 InlineKeyboardButton(
                     text=texts.t('RESET_DEVICE_CONFIRM_BUTTON', '✅ Да, сбросить это устройство'),
                     callback_data=f'confirm_reset_device_{device_index}_{page}',
+                    style='danger',
                 )
             ],
             [InlineKeyboardButton(text=texts.CANCEL, callback_data=f'devices_page_{page}')],

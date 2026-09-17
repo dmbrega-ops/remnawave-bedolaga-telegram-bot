@@ -45,6 +45,7 @@ def _build_revoke_confirm_keyboard(
                 InlineKeyboardButton(
                     text=texts.t('SUBSCRIPTION_REVOKE_CONFIRM_BTN', '✅ Подтвердить'),
                     callback_data='subscription_revoke_confirm',
+                    style='danger',
                 ),
             ],
             [

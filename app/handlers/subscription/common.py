@@ -575,7 +575,13 @@ def get_reset_devices_confirm_keyboard(
     get_texts(language)
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text='✅ Да, сбросить все устройства', callback_data='confirm_reset_devices')],
+            [
+                InlineKeyboardButton(
+                    text='✅ Да, сбросить все устройства',
+                    callback_data='confirm_reset_devices',
+                    style='danger',
+                )
+            ],
             [InlineKeyboardButton(text='❌ Отмена', callback_data=back_callback)],
         ]
     )
