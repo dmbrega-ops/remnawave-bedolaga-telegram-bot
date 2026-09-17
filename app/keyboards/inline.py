@@ -743,7 +743,7 @@ def get_main_menu_keyboard(
     # конфигом (ACTIVATE_BUTTON_VISIBLE), не кодом — эта ветка тут больше не нужна.
     keyboard.append(
         [
-            InlineKeyboardButton(text=texts.t('MENU_MANAGE', '⚙️ Управление'), callback_data='menu_subscription'),
+            InlineKeyboardButton(text=strip_leading_emoji(texts.t('MENU_MANAGE', '⚙️ Управление')), icon_custom_emoji_id=BREGA_ICON['settings'], callback_data='menu_subscription'),
             InlineKeyboardButton(text=texts.t('MENU_MORE', '☰ Ещё'), callback_data='menu_more'),
         ]
     )
