@@ -700,7 +700,7 @@ def get_main_menu_keyboard(
     if has_active_subscription and subscription_is_active:
         paired_buttons.append(
             InlineKeyboardButton(
-                text=strip_leading_emoji(texts.MENU_EXTEND_SUBSCRIPTION), icon_custom_emoji_id=BREGA_ICON['extend'], callback_data='subscription_extend', style='primary'
+                text=strip_leading_emoji(texts.MENU_EXTEND_SUBSCRIPTION), icon_custom_emoji_id=BREGA_ICON['extend'], callback_data='subscription_extend'
             )
         )
     else:
@@ -1250,7 +1250,6 @@ def get_subscription_keyboard(
                         InlineKeyboardButton(
                             text=strip_leading_emoji(texts.MENU_EXTEND_SUBSCRIPTION), icon_custom_emoji_id=BREGA_ICON['extend'],
                             callback_data='subscription_extend',
-                            style='primary',
                         ),
                         InlineKeyboardButton(
                             text=strip_leading_emoji(texts.t('AUTOPAY_BUTTON', '💳 Автоплатеж')), icon_custom_emoji_id=BREGA_ICON['autopay'],
