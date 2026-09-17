@@ -1291,6 +1291,17 @@ def get_subscription_keyboard(
                     )
             keyboard.append(settings_row)
 
+            # Отдельный экран «📱 Устройства»: список подключённых устройств,
+            # per-device переименование/сброс и перевыпуск ссылки (revoke).
+            keyboard.append(
+                [
+                    InlineKeyboardButton(
+                        text=texts.t('DEVICES_BUTTON', '📱 Устройства'),
+                        callback_data='subscription_manage_devices',
+                    )
+                ]
+            )
+
             # Кнопка докупки трафика для платных подписок
             # В режиме тарифов проверяем can_topup_traffic() у тарифа, в классическом - глобальные настройки
             show_traffic_topup = False
@@ -3440,6 +3451,19 @@ def get_devices_management_keyboard(
         ]
     )
 
+    # Перевыпуск подписки (revoke) — действие уровня экрана: меняет всю ссылку
+    # и разом отключает все устройства. Живёт здесь, рядом со «Сбросить все»,
+    # а не отдельной кнопкой в Настройках (у самого действия есть подтверждение).
+    if settings.is_subscription_revoke_enabled():
+        keyboard.append(
+            [
+                InlineKeyboardButton(
+                    text=texts.t('SUBSCRIPTION_REVOKE_BTN', '🔄 Перевыпустить подписку'),
+                    callback_data='subscription_revoke',
+                )
+            ]
+        )
+
     keyboard.append([InlineKeyboardButton(text=texts.BACK, callback_data=back_callback)])
 
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
@@ -3511,24 +3535,10 @@ def get_updated_subscription_settings_keyboard(
             ]
         )
 
-    keyboard.append(
-        [
-            InlineKeyboardButton(
-                text=texts.t('MANAGE_DEVICES_BUTTON', '🔧 Управление устройствами'),
-                callback_data='subscription_manage_devices',
-            )
-        ]
-    )
-
-    if settings.is_subscription_revoke_enabled():
-        keyboard.append(
-            [
-                InlineKeyboardButton(
-                    text=texts.t('SUBSCRIPTION_REVOKE_BTN', '🔄 Перевыпустить подписку'),
-                    callback_data='subscription_revoke',
-                )
-            ]
-        )
+    # «🔧 Управление устройствами» и «🔄 Перевыпустить подписку» переехали
+    # в отдельный экран «📱 Устройства» (get_devices_management_keyboard),
+    # доступный кнопкой прямо из карточки подписки — чтобы не было двух входов
+    # в управление устройствами и чтобы сброс ключа жил рядом со списком устройств.
 
     keyboard.append([InlineKeyboardButton(text=texts.BACK, callback_data='menu_subscription')])
 

@@ -501,20 +501,9 @@ async def show_subscription_info(callback: types.CallbackQuery, db_user: User, d
         device_limit=device_limit_display,
     )
 
-    if show_devices and devices_list:
-        message += '\n\n' + texts.t(
-            'SUBSCRIPTION_CONNECTED_DEVICES_TITLE',
-            '<blockquote>📱 <b>Подключенные устройства:</b>\n',
-        )
-        for device in devices_list[:5]:
-            platform = device.get('platform', 'Unknown')
-            device_model = device.get('deviceModel', 'Unknown')
-            device_info = f'{platform} - {device_model}'
-
-            if len(device_info) > 35:
-                device_info = device_info[:32] + '...'
-            message += f'• {device_info}\n'
-        message += texts.t('SUBSCRIPTION_CONNECTED_DEVICES_FOOTER', '</blockquote>')
+    # Список подключённых устройств вынесен в отдельный экран «📱 Устройства»
+    # (кнопка в карточке → subscription_manage_devices). В карточке остаётся
+    # только счётчик {devices_used}/{device_limit}.
 
     # Отображаем докупленный трафик
     if subscription.traffic_limit_gb > 0:  # Только для лимитированных тарифов
