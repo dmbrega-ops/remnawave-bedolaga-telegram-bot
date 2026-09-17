@@ -455,28 +455,28 @@ async def show_subscription_info(callback: types.CallbackQuery, db_user: User, d
         # Для суточных тарифов другой шаблон без "Действует до" и "Осталось"
         message_template = texts.t(
             'SUBSCRIPTION_DAILY_OVERVIEW_TEMPLATE',
-            """👤 {full_name}
-💰 Баланс: {balance}
-📱 Подписка: {status_emoji} {status_display}{warning}
-📈 Трафик: {traffic}{tariff_info_block}
+            """<tg-emoji emoji-id="5287497919862188920">👤</tg-emoji> {full_name}
+<tg-emoji emoji-id="5287699791915034511">💰</tg-emoji> Баланс: {balance}
+<tg-emoji emoji-id="5287703223593903949">📱</tg-emoji> Подписка: {status_emoji} {status_display}{warning}
+<tg-emoji emoji-id="5287720601031586670">📈</tg-emoji> Трафик: {traffic}{tariff_info_block}
 
-📱 Информация о подписке
-🌍 Серверы: {servers}
-📱 Устройства: {devices_used} / {device_limit}""",
+<tg-emoji emoji-id="5287752766041662409">ℹ️</tg-emoji> Информация о подписке
+<tg-emoji emoji-id="5287299062876383249">🌍</tg-emoji> Серверы: {servers}
+<tg-emoji emoji-id="5287241845322064482">📱</tg-emoji> Устройства: {devices_used} / {device_limit}""",
         )
     else:
         message_template = texts.t(
             'SUBSCRIPTION_OVERVIEW_TEMPLATE',
-            """👤 {full_name}
-💰 Баланс: {balance}
-📱 Подписка: {status_emoji} {status_display}{warning}
-📅 Действует до: {end_date}
-⏰ Осталось: {time_left}
-📈 Трафик: {traffic}{tariff_info_block}
+            """<tg-emoji emoji-id="5287497919862188920">👤</tg-emoji> {full_name}
+<tg-emoji emoji-id="5287699791915034511">💰</tg-emoji> Баланс: {balance}
+<tg-emoji emoji-id="5287703223593903949">📱</tg-emoji> Подписка: {status_emoji} {status_display}{warning}
+<tg-emoji emoji-id="5287458358918421962">🗓</tg-emoji> Действует до: {end_date}
+<tg-emoji emoji-id="5287611053595732723">🕒</tg-emoji> Осталось: {time_left}
+<tg-emoji emoji-id="5287720601031586670">📈</tg-emoji> Трафик: {traffic}{tariff_info_block}
 
-📱 Информация о подписке
-🌍 Серверы: {servers}
-📱 Устройства: {devices_used} / {device_limit}""",
+<tg-emoji emoji-id="5287752766041662409">ℹ️</tg-emoji> Информация о подписке
+<tg-emoji emoji-id="5287299062876383249">🌍</tg-emoji> Серверы: {servers}
+<tg-emoji emoji-id="5287241845322064482">📱</tg-emoji> Устройства: {devices_used} / {device_limit}""",
         )
 
     if not show_devices:
