@@ -30,12 +30,25 @@ from app.config import settings
 from app.database.models import User
 from app.keyboards.reply import get_nav_reply_keyboard, nav_menu_labels
 from app.localization.texts import get_texts
+from app.utils.miniapp_buttons import strip_leading_emoji
 
 
 logger = structlog.get_logger(__name__)
 
 # RU-only stand: labels/filters resolved once at registration time.
 _LABELS = nav_menu_labels(settings.DEFAULT_LANGUAGE)
+
+
+def _label_variants(key: str) -> set[str]:
+    """Both the full label and the emoji-stripped one.
+
+    The nav reply-keyboard buttons now carry a custom-emoji icon and their
+    caption is stripped of the leading unicode glyph, so a tap sends the bare
+    text (e.g. "Профиль"). Older cached keyboards still send the full "👤 Профиль".
+    Match either so routing never drifts.
+    """
+    full = _LABELS[key]
+    return {full, strip_leading_emoji(full)}
 
 
 class _ReplyNavCallback(types.CallbackQuery):
@@ -107,6 +120,6 @@ async def send_main_reply_keyboard(target_message: types.Message, language: str 
 
 
 def register_handlers(dp: Dispatcher) -> None:
-    dp.message.register(open_profile, F.text == _LABELS['profile'])
-    dp.message.register(open_subscription, F.text == _LABELS['subscription'])
-    dp.message.register(open_info, F.text == _LABELS['info'])
+    dp.message.register(open_profile, F.text.in_(_label_variants('profile')))
+    dp.message.register(open_subscription, F.text.in_(_label_variants('subscription')))
+    dp.message.register(open_info, F.text.in_(_label_variants('info')))
