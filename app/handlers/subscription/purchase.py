@@ -20,6 +20,8 @@ from app.database.crud.subscription import (
 from app.database.crud.transaction import create_transaction
 from app.database.crud.user import subtract_user_balance
 from app.database.models import PaymentMethod, Subscription, SubscriptionStatus, TransactionType, User
+from app.utils.brega_icons import BREGA_ICON
+from app.utils.miniapp_buttons import strip_leading_emoji
 from app.keyboards.inline import (
     get_back_keyboard,
     get_countries_keyboard,
@@ -1160,7 +1162,7 @@ async def activate_trial(callback: types.CallbackQuery, db_user: User, db: Async
                     inline_keyboard=[
                         [
                             InlineKeyboardButton(
-                                text=texts.t('CONNECT_BUTTON', '🔗 Подключиться'),
+                                text=strip_leading_emoji(texts.t('CONNECT_BUTTON', '🔗 Подключиться')), icon_custom_emoji_id=BREGA_ICON['connect'],
                                 web_app=types.WebAppInfo(url=subscription_link),
                             )
                         ],
@@ -1187,7 +1189,7 @@ async def activate_trial(callback: types.CallbackQuery, db_user: User, db: Async
                     inline_keyboard=[
                         [
                             InlineKeyboardButton(
-                                text=texts.t('CONNECT_BUTTON', '🔗 Подключиться'),
+                                text=strip_leading_emoji(texts.t('CONNECT_BUTTON', '🔗 Подключиться')), icon_custom_emoji_id=BREGA_ICON['connect'],
                                 web_app=types.WebAppInfo(url=settings.MINIAPP_CUSTOM_URL),
                             )
                         ],
@@ -1203,7 +1205,7 @@ async def activate_trial(callback: types.CallbackQuery, db_user: User, db: Async
                 rows = [
                     [
                         InlineKeyboardButton(
-                            text=texts.t('CONNECT_BUTTON', '🔗 Подключиться'),
+                            text=strip_leading_emoji(texts.t('CONNECT_BUTTON', '🔗 Подключиться')), icon_custom_emoji_id=BREGA_ICON['connect'],
                             url=subscription_link,
                         )
                     ]
@@ -1224,7 +1226,7 @@ async def activate_trial(callback: types.CallbackQuery, db_user: User, db: Async
                 rows = [
                     [
                         InlineKeyboardButton(
-                            text=texts.t('CONNECT_BUTTON', '🔗 Подключиться'),
+                            text=strip_leading_emoji(texts.t('CONNECT_BUTTON', '🔗 Подключиться')), icon_custom_emoji_id=BREGA_ICON['connect'],
                             callback_data='open_subscription_link',
                         )
                     ]
@@ -1246,7 +1248,7 @@ async def activate_trial(callback: types.CallbackQuery, db_user: User, db: Async
                     inline_keyboard=[
                         [
                             InlineKeyboardButton(
-                                text=texts.t('CONNECT_BUTTON', '🔗 Подключиться'),
+                                text=strip_leading_emoji(texts.t('CONNECT_BUTTON', '🔗 Подключиться')), icon_custom_emoji_id=BREGA_ICON['connect'],
                                 callback_data='subscription_connect',
                             )
                         ],
@@ -2723,7 +2725,7 @@ async def confirm_purchase(callback: types.CallbackQuery, state: FSMContext, db_
                     inline_keyboard=[
                         [
                             InlineKeyboardButton(
-                                text=texts.t('CONNECT_BUTTON', '🔗 Подключиться'),
+                                text=strip_leading_emoji(texts.t('CONNECT_BUTTON', '🔗 Подключиться')), icon_custom_emoji_id=BREGA_ICON['connect'],
                                 web_app=types.WebAppInfo(url=subscription_link),
                             )
                         ],
@@ -2750,7 +2752,7 @@ async def confirm_purchase(callback: types.CallbackQuery, state: FSMContext, db_
                     inline_keyboard=[
                         [
                             InlineKeyboardButton(
-                                text=texts.t('CONNECT_BUTTON', '🔗 Подключиться'),
+                                text=strip_leading_emoji(texts.t('CONNECT_BUTTON', '🔗 Подключиться')), icon_custom_emoji_id=BREGA_ICON['connect'],
                                 web_app=types.WebAppInfo(url=settings.MINIAPP_CUSTOM_URL),
                             )
                         ],
@@ -2764,7 +2766,7 @@ async def confirm_purchase(callback: types.CallbackQuery, state: FSMContext, db_
                 )
             elif connect_mode == 'link':
                 rows = [
-                    [InlineKeyboardButton(text=texts.t('CONNECT_BUTTON', '🔗 Подключиться'), url=subscription_link)]
+                    [InlineKeyboardButton(text=strip_leading_emoji(texts.t('CONNECT_BUTTON', '🔗 Подключиться')), icon_custom_emoji_id=BREGA_ICON['connect'], url=subscription_link)]
                 ]
                 happ_row = get_happ_download_button_row(texts)
                 if happ_row:
@@ -2781,7 +2783,7 @@ async def confirm_purchase(callback: types.CallbackQuery, state: FSMContext, db_
                 rows = [
                     [
                         InlineKeyboardButton(
-                            text=texts.t('CONNECT_BUTTON', '🔗 Подключиться'),
+                            text=strip_leading_emoji(texts.t('CONNECT_BUTTON', '🔗 Подключиться')), icon_custom_emoji_id=BREGA_ICON['connect'],
                             callback_data='open_subscription_link',
                         )
                     ]
@@ -2802,7 +2804,7 @@ async def confirm_purchase(callback: types.CallbackQuery, state: FSMContext, db_
                     inline_keyboard=[
                         [
                             InlineKeyboardButton(
-                                text=texts.t('CONNECT_BUTTON', '🔗 Подключиться'), callback_data='subscription_connect'
+                                text=strip_leading_emoji(texts.t('CONNECT_BUTTON', '🔗 Подключиться')), icon_custom_emoji_id=BREGA_ICON['connect'], callback_data='subscription_connect'
                             )
                         ],
                         [
@@ -3559,7 +3561,7 @@ def _build_trial_success_keyboard(texts, subscription_link: str, connect_mode: s
             inline_keyboard=[
                 [
                     InlineKeyboardButton(
-                        text=texts.t('CONNECT_BUTTON', '🔗 Подключиться'),
+                        text=strip_leading_emoji(texts.t('CONNECT_BUTTON', '🔗 Подключиться')), icon_custom_emoji_id=BREGA_ICON['connect'],
                         web_app=types.WebAppInfo(url=subscription_link),
                     )
                 ],
@@ -3579,7 +3581,7 @@ def _build_trial_success_keyboard(texts, subscription_link: str, connect_mode: s
             inline_keyboard=[
                 [
                     InlineKeyboardButton(
-                        text=texts.t('CONNECT_BUTTON', '🔗 Подключиться'),
+                        text=strip_leading_emoji(texts.t('CONNECT_BUTTON', '🔗 Подключиться')), icon_custom_emoji_id=BREGA_ICON['connect'],
                         web_app=types.WebAppInfo(url=settings.MINIAPP_CUSTOM_URL),
                     )
                 ],
@@ -3595,7 +3597,7 @@ def _build_trial_success_keyboard(texts, subscription_link: str, connect_mode: s
         rows = [
             [
                 InlineKeyboardButton(
-                    text=texts.t('CONNECT_BUTTON', '🔗 Подключиться'),
+                    text=strip_leading_emoji(texts.t('CONNECT_BUTTON', '🔗 Подключиться')), icon_custom_emoji_id=BREGA_ICON['connect'],
                     url=subscription_link,
                 )
             ]
@@ -3616,7 +3618,7 @@ def _build_trial_success_keyboard(texts, subscription_link: str, connect_mode: s
         rows = [
             [
                 InlineKeyboardButton(
-                    text=texts.t('CONNECT_BUTTON', '🔗 Подключиться'),
+                    text=strip_leading_emoji(texts.t('CONNECT_BUTTON', '🔗 Подключиться')), icon_custom_emoji_id=BREGA_ICON['connect'],
                     callback_data='open_subscription_link',
                 )
             ]
@@ -3637,7 +3639,7 @@ def _build_trial_success_keyboard(texts, subscription_link: str, connect_mode: s
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text=texts.t('CONNECT_BUTTON', '🔗 Подключиться'),
+                    text=strip_leading_emoji(texts.t('CONNECT_BUTTON', '🔗 Подключиться')), icon_custom_emoji_id=BREGA_ICON['connect'],
                     callback_data='subscription_connect',
                 )
             ],
