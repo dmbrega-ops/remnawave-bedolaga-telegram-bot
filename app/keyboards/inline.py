@@ -619,7 +619,6 @@ def get_main_menu_keyboard(
             return InlineKeyboardButton(
                 text=strip_leading_emoji(texts.t('CONNECT_BUTTON', '🔗 Подключиться')), icon_custom_emoji_id=BREGA_ICON['connect'],
                 callback_data='subscription_connect',
-                style='success',
             )
 
         if connect_mode == 'miniapp_subscription':
@@ -629,7 +628,6 @@ def get_main_menu_keyboard(
                         InlineKeyboardButton(
                             text=strip_leading_emoji(texts.t('CONNECT_BUTTON', '🔗 Подключиться')), icon_custom_emoji_id=BREGA_ICON['connect'],
                             web_app=types.WebAppInfo(url=subscription_link),
-                            style='success',
                         )
                     ]
                 )
@@ -641,7 +639,6 @@ def get_main_menu_keyboard(
                     InlineKeyboardButton(
                         text=strip_leading_emoji(texts.t('CONNECT_BUTTON', '🔗 Подключиться')), icon_custom_emoji_id=BREGA_ICON['connect'],
                         web_app=types.WebAppInfo(url=settings.MINIAPP_CUSTOM_URL),
-                        style='success',
                     )
                 ]
             )
@@ -650,7 +647,7 @@ def get_main_menu_keyboard(
                 keyboard.append(
                     [
                         InlineKeyboardButton(
-                            text=strip_leading_emoji(texts.t('CONNECT_BUTTON', '🔗 Подключиться')), icon_custom_emoji_id=BREGA_ICON['connect'], url=subscription_link, style='success'
+                            text=strip_leading_emoji(texts.t('CONNECT_BUTTON', '🔗 Подключиться')), icon_custom_emoji_id=BREGA_ICON['connect'], url=subscription_link
                         )
                     ]
                 )
@@ -667,7 +664,6 @@ def get_main_menu_keyboard(
                                 if settings.is_multi_tariff_enabled()
                                 else 'open_subscription_link'
                             ),
-                            style='success',
                         )
                     ]
                 )
@@ -3194,7 +3190,6 @@ def get_connection_guide_keyboard(
                             InlineKeyboardButton(
                                 text=strip_leading_emoji(texts.t('CONNECT_BUTTON', '🔗 Подключиться')), icon_custom_emoji_id=BREGA_ICON['connect'],
                                 url=final_url,
-                                style='success',
                             )
                         ]
                     )
@@ -3209,7 +3204,6 @@ def get_connection_guide_keyboard(
                             InlineKeyboardButton(
                                 text=strip_leading_emoji(texts.t('CONNECT_BUTTON', '🔗 Подключиться')), icon_custom_emoji_id=BREGA_ICON['connect'],
                                 callback_data=_osl_cb,
-                                style='success',
                             )
                         ]
                     )
@@ -3219,7 +3213,6 @@ def get_connection_guide_keyboard(
                             InlineKeyboardButton(
                                 text=strip_leading_emoji(texts.t('CONNECT_BUTTON', '🔗 Подключиться')), icon_custom_emoji_id=BREGA_ICON['connect'],
                                 url=subscription_url,
-                                style='success',
                             )
                         ]
                     )

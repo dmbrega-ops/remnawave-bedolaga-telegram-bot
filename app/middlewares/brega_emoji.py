@@ -30,7 +30,12 @@ def _effective_parse_mode(method: TelegramMethod[Any], bot: Bot) -> Any:
 
 
 def _is_html(pm: Any) -> bool:
-    return pm is not None and str(pm).upper() == ParseMode.HTML.value.upper()
+    if pm is None:
+        return False
+    # ParseMode is a (str, Enum); str(ParseMode.HTML) is "ParseMode.HTML", so
+    # compare the .value ("HTML"). Plain strings pass through unchanged.
+    value = getattr(pm, 'value', pm)
+    return str(value).upper() == ParseMode.HTML.value.upper()
 
 
 class BregaEmojiMiddleware(BaseRequestMiddleware):
