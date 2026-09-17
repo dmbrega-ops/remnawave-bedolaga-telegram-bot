@@ -1641,6 +1641,9 @@ async def cmd_start(message: types.Message, state: FSMContext, db: AsyncSession,
             is_moderator=is_moderator,
             custom_buttons=custom_buttons,
         )
+        from app.handlers.reply_menu import send_main_reply_keyboard
+
+        await send_main_reply_keyboard(message, user.language)
         if not await try_answer_rich_main_menu(message, user, texts, db, keyboard):
             menu_text = await get_main_menu_text(user, texts, db)
             await answer_menu_with_media(message, menu_text, keyboard, db)
@@ -2301,6 +2304,9 @@ async def complete_registration_from_callback(callback: types.CallbackQuery, sta
             )
             if pinned_message and pinned_message.send_before_menu:
                 await _send_pinned_message(callback.bot, db, existing_user, pinned_message)
+            from app.handlers.reply_menu import send_main_reply_keyboard
+
+            await send_main_reply_keyboard(callback.message, existing_user.language)
             if not await try_answer_rich_main_menu(callback.message, existing_user, texts, db, keyboard):
                 menu_text = await get_main_menu_text(existing_user, texts, db)
                 await answer_menu_with_media(callback.message, menu_text, keyboard, db)
@@ -2586,6 +2592,9 @@ async def complete_registration_from_callback(callback: types.CallbackQuery, sta
             )
             if pinned_message and pinned_message.send_before_menu:
                 await _send_pinned_message(callback.bot, db, user, pinned_message)
+            from app.handlers.reply_menu import send_main_reply_keyboard
+
+            await send_main_reply_keyboard(callback.message, user.language)
             if not await try_answer_rich_main_menu(callback.message, user, texts, db, keyboard):
                 menu_text = await get_main_menu_text(user, texts, db)
                 await answer_menu_with_media(callback.message, menu_text, keyboard, db)

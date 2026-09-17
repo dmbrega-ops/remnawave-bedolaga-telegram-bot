@@ -23,6 +23,39 @@ def get_main_reply_keyboard(language: str = 'ru') -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True, one_time_keyboard=False)
 
 
+def nav_menu_labels(language: str = 'ru') -> dict[str, str]:
+    """Single source of truth for the persistent nav reply-keyboard labels.
+
+    Both the keyboard buttons and the message-text filters that route them are
+    built from this dict, so the button caption and the filter can never drift.
+    Inline defaults are used so the labels render even when a mounted runtime
+    locale file omits the keys (see locales mount override on the stand).
+    """
+    texts = get_texts(language)
+    return {
+        'profile': texts.t('REPLY_MENU_PROFILE', '👤 Профиль'),
+        'subscription': texts.t('MENU_SUBSCRIPTION', '📱 Подписка'),
+        'info': texts.t('MENU_INFO', 'ℹ️ Инфо'),
+    }
+
+
+def get_nav_reply_keyboard(language: str = 'ru') -> ReplyKeyboardMarkup:
+    """Persistent bottom reply-keyboard with the three main-menu shortcuts."""
+    labels = nav_menu_labels(language)
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [
+                KeyboardButton(text=labels['profile']),
+                KeyboardButton(text=labels['subscription']),
+                KeyboardButton(text=labels['info']),
+            ]
+        ],
+        resize_keyboard=True,
+        is_persistent=True,
+        one_time_keyboard=False,
+    )
+
+
 def get_admin_reply_keyboard(language: str = 'ru') -> ReplyKeyboardMarkup:
     texts = get_texts(language)
 

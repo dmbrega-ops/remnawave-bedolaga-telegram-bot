@@ -13,6 +13,7 @@ from app.handlers import (
     promocode,
     referral,
     referral_settings,
+    reply_menu,
     server_status,
     simple_subscription,
     start,
@@ -183,6 +184,9 @@ async def setup_bot() -> tuple[Bot, Dispatcher]:
     dp.message.middleware(SubscriptionStatusMiddleware())
     dp.callback_query.middleware(SubscriptionStatusMiddleware())
     dp.pre_checkout_query.middleware(SubscriptionStatusMiddleware())
+    # Registered first so the narrow reply-keyboard text filters win over every
+    # FSM message handler (pressing a nav button mid-input navigates — risk #1).
+    reply_menu.register_handlers(dp)
     start.register_handlers(dp)
     menu.register_handlers(dp)
     subscription.register_handlers(dp)
