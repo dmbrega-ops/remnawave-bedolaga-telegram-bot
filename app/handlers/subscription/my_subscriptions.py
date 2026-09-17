@@ -148,7 +148,8 @@ def _build_subscription_detail_keyboard(sub_id: int, sub=None) -> types.InlineKe
         buttons.append(
             [
                 types.InlineKeyboardButton(
-                    text='🔄 Перевыпустить',
+                    text='Перевыпустить',
+                    icon_custom_emoji_id=BREGA_ICON['reset'],
                     callback_data=f'sr:{sub_id}',
                 )
             ]

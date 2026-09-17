@@ -1630,7 +1630,7 @@ def get_balance_keyboard(language: str = DEFAULT_LANGUAGE) -> InlineKeyboardMark
     keyboard = [
         [
             InlineKeyboardButton(text=texts.BALANCE_HISTORY, callback_data='balance_history'),
-            InlineKeyboardButton(text=texts.BALANCE_TOP_UP, callback_data='balance_topup'),
+            InlineKeyboardButton(text=strip_leading_emoji(texts.BALANCE_TOP_UP), icon_custom_emoji_id=BREGA_ICON['autopay'], callback_data='balance_topup'),
         ],
     ]
     if settings.YOOKASSA_RECURRENT_ENABLED:
@@ -3417,7 +3417,8 @@ def get_devices_management_keyboard(
                     callback_data=f'device_rename_{i}_{pagination.page}',
                 ),
                 InlineKeyboardButton(
-                    text=f'🔄 {device_info}',
+                    text=device_info,
+                    icon_custom_emoji_id=BREGA_ICON['reset'],
                     callback_data=f'reset_device_{i}_{pagination.page}',
                     style='danger',
                 ),
@@ -3464,7 +3465,7 @@ def get_devices_management_keyboard(
         keyboard.append(
             [
                 InlineKeyboardButton(
-                    text=texts.t('SUBSCRIPTION_REVOKE_BTN', '🔄 Перевыпустить подписку'),
+                    text=strip_leading_emoji(texts.t('SUBSCRIPTION_REVOKE_BTN', '🔄 Перевыпустить подписку')), icon_custom_emoji_id=BREGA_ICON['reset'],
                     callback_data='subscription_revoke',
                     style='danger',
                 )

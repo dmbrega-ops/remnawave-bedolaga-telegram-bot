@@ -417,7 +417,7 @@ def get_tariff_insufficient_balance_keyboard(
 
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text=texts.t('BALANCE_TOPUP', '💳 Пополнить баланс'), callback_data='balance_topup')],
+            [InlineKeyboardButton(text=strip_leading_emoji(texts.t('BALANCE_TOPUP', '💳 Пополнить баланс')), icon_custom_emoji_id=BREGA_ICON['autopay'], callback_data='balance_topup')],
             *sbp_rows,
             [back_button],
         ]
@@ -470,7 +470,7 @@ def get_tariff_extend_insufficient_balance_keyboard(
 
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text=texts.t('BALANCE_TOPUP', '💳 Пополнить баланс'), callback_data='balance_topup')],
+            [InlineKeyboardButton(text=strip_leading_emoji(texts.t('BALANCE_TOPUP', '💳 Пополнить баланс')), icon_custom_emoji_id=BREGA_ICON['autopay'], callback_data='balance_topup')],
             [back_button],
         ]
     )
@@ -577,7 +577,7 @@ def get_daily_tariff_insufficient_balance_keyboard(
     texts = get_texts(language)
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text=texts.t('BALANCE_TOPUP', '💳 Пополнить баланс'), callback_data='balance_topup')],
+            [InlineKeyboardButton(text=strip_leading_emoji(texts.t('BALANCE_TOPUP', '💳 Пополнить баланс')), icon_custom_emoji_id=BREGA_ICON['autopay'], callback_data='balance_topup')],
             *_sbp_purchase_rows(tariff_id, texts),
             [InlineKeyboardButton(text=texts.BACK, callback_data=back_callback)],
         ]
@@ -3365,7 +3365,7 @@ def get_tariff_switch_insufficient_balance_keyboard(
     texts = get_texts(language)
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text=texts.t('BALANCE_TOPUP', '💳 Пополнить баланс'), callback_data='balance_topup')],
+            [InlineKeyboardButton(text=strip_leading_emoji(texts.t('BALANCE_TOPUP', '💳 Пополнить баланс')), icon_custom_emoji_id=BREGA_ICON['autopay'], callback_data='balance_topup')],
             [InlineKeyboardButton(text=texts.BACK, callback_data=f'tariff_sw_select:{tariff_id}')],
         ]
     )
@@ -3622,7 +3622,7 @@ async def select_tariff_switch(
                     inline_keyboard=[
                         [
                             InlineKeyboardButton(
-                                text=texts.t('BALANCE_TOPUP', '💳 Пополнить баланс'), callback_data='balance_topup'
+                                text=strip_leading_emoji(texts.t('BALANCE_TOPUP', '💳 Пополнить баланс')), icon_custom_emoji_id=BREGA_ICON['autopay'], callback_data='balance_topup'
                             )
                         ],
                         [InlineKeyboardButton(text=texts.BACK, callback_data='tariff_switch')],
@@ -4525,7 +4525,7 @@ def get_instant_switch_insufficient_balance_keyboard(
     texts = get_texts(language)
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text=texts.t('BALANCE_TOPUP', '💳 Пополнить баланс'), callback_data='balance_topup')],
+            [InlineKeyboardButton(text=strip_leading_emoji(texts.t('BALANCE_TOPUP', '💳 Пополнить баланс')), icon_custom_emoji_id=BREGA_ICON['autopay'], callback_data='balance_topup')],
             [InlineKeyboardButton(text=texts.BACK, callback_data='instant_switch')],
         ]
     )
