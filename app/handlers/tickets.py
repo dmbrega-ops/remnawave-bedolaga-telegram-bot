@@ -24,7 +24,8 @@ from app.localization.texts import get_texts
 from app.services.admin_notification_service import AdminNotificationService
 from app.utils.cache import RateLimitCache, cache, cache_key
 from app.utils.formatters import format_username_link
-from app.utils.miniapp_buttons import build_admin_ticket_cabinet_button
+from app.utils.brega_icons import BREGA_ICON
+from app.utils.miniapp_buttons import build_admin_ticket_cabinet_button, strip_leading_emoji
 from app.utils.photo_message import edit_or_answer_photo, safe_edit_or_resend
 from app.utils.ticket_text import (
     TICKET_MESSAGE_MAX_LENGTH,
@@ -369,7 +370,7 @@ async def show_my_tickets(callback: types.CallbackQuery, db_user: User, db: Asyn
                 inline_keyboard=[
                     [
                         types.InlineKeyboardButton(
-                            text=texts.t('CREATE_TICKET_BUTTON', '🎫 Создать тикет'), callback_data='create_ticket'
+                            text=strip_leading_emoji(texts.t('CREATE_TICKET_BUTTON', '🎫 Создать тикет')), icon_custom_emoji_id=BREGA_ICON['ticket'], callback_data='create_ticket'
                         )
                     ],
                     [
