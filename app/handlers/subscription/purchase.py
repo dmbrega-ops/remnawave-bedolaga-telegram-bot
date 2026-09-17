@@ -370,12 +370,18 @@ async def show_subscription_info(callback: types.CallbackQuery, db_user: User, d
 
                 # Формируем блок информации о тарифе
                 is_daily = getattr(tariff, 'is_daily', False)
-                tariff_type_str = '🔄 Суточный' if is_daily else '📅 Периодный'
+                tariff_type_str = (
+                    '<tg-emoji emoji-id="5287676474537583251">🔄</tg-emoji> Суточный'
+                    if is_daily
+                    else '<tg-emoji emoji-id="5287458358918421962">📅</tg-emoji> Периодный'
+                )
 
                 tariff_info_lines = [
-                    f'<b>📦 {html.escape(tariff.name)}</b>',
+                    f'<b><tg-emoji emoji-id="5287572330170588382">📦</tg-emoji> {html.escape(tariff.name)}</b>',
                     f'Тип: {tariff_type_str}',
-                    f'Трафик: {tariff.traffic_limit_gb} ГБ' if tariff.traffic_limit_gb > 0 else 'Трафик: ∞ Безлимит',
+                    f'Трафик: {tariff.traffic_limit_gb} ГБ'
+                    if tariff.traffic_limit_gb > 0
+                    else 'Трафик: <tg-emoji emoji-id="5287616705772697203">♾️</tg-emoji> Безлимит',
                     f'Устройства: {Texts.format_device_limit(tariff.device_limit)}',
                 ]
 
