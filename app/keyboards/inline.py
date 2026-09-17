@@ -245,7 +245,7 @@ def get_channel_sub_keyboard(
             buttons.append(
                 [
                     InlineKeyboardButton(
-                        text=texts.t('CHANNEL_SUBSCRIBE_BUTTON', '🔗 Подписаться'),
+                        text=strip_leading_emoji(texts.t('CHANNEL_SUBSCRIBE_BUTTON', '🔗 Подписаться')), icon_custom_emoji_id=BREGA_ICON['link'],
                         url=channels,
                         style='primary',
                     )
@@ -710,7 +710,7 @@ def get_main_menu_keyboard(
             )
         if show_buy:
             paired_buttons.append(
-                InlineKeyboardButton(text=texts.MENU_BUY_SUBSCRIPTION, callback_data='menu_buy', style='success')
+                InlineKeyboardButton(text=strip_leading_emoji(texts.MENU_BUY_SUBSCRIPTION), icon_custom_emoji_id=BREGA_ICON['buy'], callback_data='menu_buy', style='success')
             )
 
     if paired_buttons:
@@ -818,7 +818,7 @@ def get_info_menu_keyboard(
         )
 
     if show_rules:
-        buttons.append([InlineKeyboardButton(text=texts.MENU_RULES, callback_data='menu_rules')])
+        buttons.append([InlineKeyboardButton(text=strip_leading_emoji(texts.MENU_RULES), icon_custom_emoji_id=BREGA_ICON['list'], callback_data='menu_rules')])
 
     for page_id, page_title in custom_pages or []:
         buttons.append(
@@ -882,7 +882,7 @@ def get_more_menu_keyboard(
     keyboard.append([InlineKeyboardButton(text=balance_button_text, callback_data='menu_balance')])
 
     items: list[InlineKeyboardButton] = [
-        InlineKeyboardButton(text=texts.MENU_PROMOCODE, callback_data='menu_promocode')
+        InlineKeyboardButton(text=strip_leading_emoji(texts.MENU_PROMOCODE), icon_custom_emoji_id=BREGA_ICON['ticket'], callback_data='menu_promocode')
     ]
 
     if settings.is_referral_program_enabled():
@@ -908,7 +908,7 @@ def get_more_menu_keyboard(
             InlineKeyboardButton(text=texts.MENU_SIMPLE_SUBSCRIPTION, callback_data='simple_subscription_purchase')
         )
 
-    items.append(InlineKeyboardButton(text=texts.t('MENU_INFO', 'ℹ️ Инфо'), callback_data='menu_info'))
+    items.append(InlineKeyboardButton(text=strip_leading_emoji(texts.t('MENU_INFO', 'ℹ️ Инфо')), icon_custom_emoji_id=BREGA_ICON['info'], callback_data='menu_info'))
 
     if settings.is_language_selection_enabled():
         items.append(InlineKeyboardButton(text=texts.MENU_LANGUAGE, callback_data='menu_language'))
@@ -1014,7 +1014,7 @@ def get_happ_download_platform_keyboard(language: str = DEFAULT_LANGUAGE) -> Inl
 def get_happ_download_link_keyboard(language: str, link: str) -> InlineKeyboardMarkup:
     texts = get_texts(language)
     buttons = [
-        [InlineKeyboardButton(text=texts.t('HAPP_DOWNLOAD_OPEN_LINK', '🔗 Открыть ссылку'), url=link)],
+        [InlineKeyboardButton(text=strip_leading_emoji(texts.t('HAPP_DOWNLOAD_OPEN_LINK', '🔗 Открыть ссылку')), icon_custom_emoji_id=BREGA_ICON['link'], url=link)],
         [InlineKeyboardButton(text=texts.BACK, callback_data='happ_download_back')],
     ]
 
@@ -1216,7 +1216,7 @@ def get_subscription_keyboard(
 
         if is_trial:
             keyboard.append(
-                [InlineKeyboardButton(text=texts.MENU_BUY_SUBSCRIPTION, callback_data='subscription_upgrade')]
+                [InlineKeyboardButton(text=strip_leading_emoji(texts.MENU_BUY_SUBSCRIPTION), icon_custom_emoji_id=BREGA_ICON['buy'], callback_data='subscription_upgrade')]
             )
         else:
             # Проверяем, является ли тариф суточным
@@ -1273,7 +1273,7 @@ def get_subscription_keyboard(
                 if getattr(subscription, 'actual_status', None) in ('expired', 'disabled'):
                     settings_row.append(
                         InlineKeyboardButton(
-                            text=texts.t('BUY_TARIFF_BUTTON', '📦 Купить тариф'), callback_data='menu_buy'
+                            text=strip_leading_emoji(texts.t('BUY_TARIFF_BUTTON', '📦 Купить тариф')), icon_custom_emoji_id=BREGA_ICON['tariff'], callback_data='menu_buy'
                         )
                     )
                 else:
@@ -1287,7 +1287,7 @@ def get_subscription_keyboard(
                     tariff_callback = 'tariff_switch' if (is_daily_tariff or is_free_tariff) else 'instant_switch'
                     settings_row.append(
                         InlineKeyboardButton(
-                            text=texts.t('CHANGE_TARIFF_BUTTON', '📦 Тариф'), callback_data=tariff_callback
+                            text=strip_leading_emoji(texts.t('CHANGE_TARIFF_BUTTON', '📦 Тариф')), icon_custom_emoji_id=BREGA_ICON['tariff'], callback_data=tariff_callback
                         )
                     )
             keyboard.append(settings_row)
@@ -1316,7 +1316,7 @@ def get_subscription_keyboard(
                 keyboard.append(
                     [
                         InlineKeyboardButton(
-                            text=texts.t('BUY_TRAFFIC_BUTTON', '📈 Докупить трафик'), callback_data='buy_traffic'
+                            text=strip_leading_emoji(texts.t('BUY_TRAFFIC_BUTTON', '📈 Докупить трафик')), icon_custom_emoji_id=BREGA_ICON['traffic'], callback_data='buy_traffic'
                         )
                     ]
                 )
@@ -2478,7 +2478,7 @@ def get_support_keyboard(language: str = DEFAULT_LANGUAGE) -> InlineKeyboardMark
             ]
         )
         rows.append(
-            [InlineKeyboardButton(text=texts.t('MY_TICKETS_BUTTON', '📋 Мои тикеты'), callback_data='my_tickets')]
+            [InlineKeyboardButton(text=strip_leading_emoji(texts.t('MY_TICKETS_BUTTON', '📋 Мои тикеты')), icon_custom_emoji_id=BREGA_ICON['list'], callback_data='my_tickets')]
         )
     # Direct contact
     if contact_enabled and settings.get_support_contact_url():

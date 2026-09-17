@@ -2,15 +2,26 @@ from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemo
 
 from app.config import settings
 from app.localization.texts import get_texts
+from app.utils.brega_icons import BREGA_ICON
+from app.utils.miniapp_buttons import strip_leading_emoji
 
 
 def get_main_reply_keyboard(language: str = 'ru') -> ReplyKeyboardMarkup:
     texts = get_texts(language)
 
-    keyboard = [[KeyboardButton(text=texts.MENU_BALANCE), KeyboardButton(text=texts.MENU_SUBSCRIPTION)]]
+    keyboard = [
+        [
+            KeyboardButton(
+                text=strip_leading_emoji(texts.MENU_BALANCE), icon_custom_emoji_id=BREGA_ICON['balance']
+            ),
+            KeyboardButton(text=texts.MENU_SUBSCRIPTION),
+        ]
+    ]
 
     # Добавляем кнопки промокода и рефералов, учитывая настройки
-    second_row = [KeyboardButton(text=texts.MENU_PROMOCODE)]
+    second_row = [
+        KeyboardButton(text=strip_leading_emoji(texts.MENU_PROMOCODE), icon_custom_emoji_id=BREGA_ICON['ticket'])
+    ]
 
     # Добавляем кнопку рефералов только если программа включена
     if settings.is_referral_program_enabled():
@@ -18,7 +29,12 @@ def get_main_reply_keyboard(language: str = 'ru') -> ReplyKeyboardMarkup:
 
     keyboard.append(second_row)
 
-    keyboard.append([KeyboardButton(text=texts.MENU_SUPPORT), KeyboardButton(text=texts.MENU_RULES)])
+    keyboard.append(
+        [
+            KeyboardButton(text=texts.MENU_SUPPORT),
+            KeyboardButton(text=strip_leading_emoji(texts.MENU_RULES), icon_custom_emoji_id=BREGA_ICON['list']),
+        ]
+    )
 
     return ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True, one_time_keyboard=False)
 
@@ -47,7 +63,11 @@ def get_nav_reply_keyboard(language: str = 'ru') -> ReplyKeyboardMarkup:
             [
                 KeyboardButton(text=labels['profile'], style='success'),
                 KeyboardButton(text=labels['subscription'], style='success'),
-                KeyboardButton(text=labels['info'], style='success'),
+                KeyboardButton(
+                    text=strip_leading_emoji(labels['info']),
+                    icon_custom_emoji_id=BREGA_ICON['info'],
+                    style='success',
+                ),
             ]
         ],
         resize_keyboard=True,

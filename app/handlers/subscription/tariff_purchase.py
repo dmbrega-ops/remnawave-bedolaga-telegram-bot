@@ -28,7 +28,9 @@ from app.services.admin_notification_service import AdminNotificationService
 from app.services.subscription_service import SubscriptionService
 from app.services.tariff_switch_policy import remaining_days_for_switch, should_reset_used_traffic
 from app.services.user_cart_service import user_cart_service
+from app.utils.brega_icons import BREGA_ICON
 from app.utils.decorators import error_handler
+from app.utils.miniapp_buttons import strip_leading_emoji
 from app.utils.formatting import format_period, format_price_kopeks, format_traffic
 from app.utils.promo_offer import get_user_active_promo_discount_percent
 
@@ -3399,7 +3401,7 @@ async def show_tariff_switch_list(
                 inline_keyboard=[
                     [
                         InlineKeyboardButton(
-                            text=texts.t('BUY_TARIFF_BUTTON', '📦 Купить тариф'), callback_data='menu_buy'
+                            text=strip_leading_emoji(texts.t('BUY_TARIFF_BUTTON', '📦 Купить тариф')), icon_custom_emoji_id=BREGA_ICON['tariff'], callback_data='menu_buy'
                         )
                     ],
                     [InlineKeyboardButton(text=texts.BACK, callback_data='menu_subscription')],
@@ -4582,7 +4584,7 @@ async def show_instant_switch_list(
                 inline_keyboard=[
                     [
                         InlineKeyboardButton(
-                            text=texts.t('BUY_TARIFF_BUTTON', '📦 Купить тариф'), callback_data='menu_buy'
+                            text=strip_leading_emoji(texts.t('BUY_TARIFF_BUTTON', '📦 Купить тариф')), icon_custom_emoji_id=BREGA_ICON['tariff'], callback_data='menu_buy'
                         )
                     ],
                     [InlineKeyboardButton(text=texts.BACK, callback_data='menu_subscription')],

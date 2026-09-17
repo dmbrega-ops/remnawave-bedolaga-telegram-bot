@@ -17,7 +17,9 @@ from app.localization.texts import get_texts
 from app.services.payment_service import PaymentService
 from app.services.subscription_purchase_service import SubscriptionPurchaseService
 from app.states import SubscriptionStates
+from app.utils.brega_icons import BREGA_ICON
 from app.utils.decorators import error_handler
+from app.utils.miniapp_buttons import strip_leading_emoji
 from app.utils.pricing_utils import compute_simple_subscription_price
 from app.utils.subscription_utils import (
     get_display_subscription_link,
@@ -1026,7 +1028,7 @@ async def handle_simple_subscription_payment_method(
 
             # Добавляем кнопку оплаты, если доступна ссылка
             if confirmation_url:
-                keyboard_buttons.append([types.InlineKeyboardButton(text='🔗 Перейти к оплате', url=confirmation_url)])
+                keyboard_buttons.append([types.InlineKeyboardButton(text='Перейти к оплате', icon_custom_emoji_id=BREGA_ICON['link'], url=confirmation_url)])
             else:
                 # Если ссылка недоступна, предлагаем оплатить через ID платежа в приложении банка
                 keyboard_buttons.append(
