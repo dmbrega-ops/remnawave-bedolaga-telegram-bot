@@ -1235,8 +1235,10 @@ async def show_more_menu(callback: types.CallbackQuery, db_user: User, db: Async
         return
 
     texts = get_texts(db_user.language)
-    header = texts.t('MENU_MORE_HEADER', '☰ <b>Ещё</b>')
+    header = texts.t('MENU_MORE_HEADER', '⚙️ <b>Дополнительно</b>')
 
+    # force_text=True: этот экран рендерим без логотипа — он тут лишний,
+    # оставляем только заголовок и кнопки.
     await edit_or_answer_photo(
         callback=callback,
         caption=header,
@@ -1245,6 +1247,7 @@ async def show_more_menu(callback: types.CallbackQuery, db_user: User, db: Async
             balance_kopeks=db_user.balance_kopeks,
         ),
         parse_mode='HTML',
+        force_text=True,
     )
     await callback.answer()
 
