@@ -5,6 +5,7 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
 from app.config import settings
+from app.middlewares.brega_emoji import BregaEmojiMiddleware
 from app.middlewares.stale_callback_answer import StaleCallbackAnswerMiddleware
 
 
@@ -29,4 +30,6 @@ def create_bot(token: str | None = None, **kwargs) -> Bot:
     bot = Bot(token=token or settings.BOT_TOKEN, session=session, **kwargs)
     # Поздний ответ на нажатие кнопки — предупреждение, а не исключение (см. middleware).
     bot.session.middleware(StaleCallbackAnswerMiddleware())
+    # Авто-замена юникод-эмодзи на brega_by custom emoji в тексте сообщений.
+    bot.session.middleware(BregaEmojiMiddleware())
     return bot
