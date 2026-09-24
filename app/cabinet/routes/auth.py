@@ -527,10 +527,15 @@ async def _sync_subscription_from_panel_by_email(db: AsyncSession, user: User) -
         async with service.get_api_client() as api:
             # Try to find user by email in panel.
             # 3.0.0 удалил GET /api/users/by-email — поиск живёт фильтром стрима.
-            panel_users = await api.find_users_by_email(user.email)
+            # The panel's email filter is case-sensitive, and legacy panel users
+            # were stored lowercased — try the normalized form first, then as typed.
+            email_normalized = user_email.strip().lower()
+            panel_users = await api.find_users_by_email(email_normalized)
+            if not panel_users and user_email != email_normalized:
+                panel_users = await api.find_users_by_email(user_email)
 
             if not panel_users:
-                logger.debug('No subscription found in panel for email', email=user.email)
+                logger.info('No subscription found in panel for email', email=user_email)
                 return
 
             # In multi-tariff mode, sync ALL panel users (each = one subscription)
