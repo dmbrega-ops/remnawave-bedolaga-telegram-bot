@@ -542,6 +542,7 @@ async def _sync_subscription_from_panel_by_email(db: AsyncSession, user: User) -
             # In single-tariff mode, process only the first
             from app.database.crud.subscription import get_active_subscriptions_by_user_id, get_subscription_by_user_id
             from app.database.models import Subscription, SubscriptionStatus
+            from app.services.subscription_service import link_subscription_panel_identity
 
             panel_users_to_sync = panel_users if settings.is_multi_tariff_enabled() else panel_users[:1]
 
@@ -628,6 +629,9 @@ async def _sync_subscription_from_panel_by_email(db: AsyncSession, user: User) -
                     existing_sub.connected_squads = connected_squads
                     existing_sub.device_limit = device_limit
                     existing_sub.is_trial = False
+                    if not settings.is_multi_tariff_enabled():
+                        # Admin screens for a selected subscription read subscriptions.remnawave_id
+                        await link_subscription_panel_identity(db, existing_sub, panel_user.id)
                     logger.info(
                         'Updated subscription for email user',
                         email=user.email,
@@ -637,6 +641,12 @@ async def _sync_subscription_from_panel_by_email(db: AsyncSession, user: User) -
                     from app.database.crud.subscription import generate_unique_short_id
 
                     _short_id = await generate_unique_short_id(db)
+                    # The column is partially unique — only claim the panel id if no row holds it
+                    _panel_id_taken = (
+                        await db.execute(
+                            select(Subscription.id).where(Subscription.remnawave_id == panel_user.id).limit(1)
+                        )
+                    ).scalar_one_or_none()
                     new_sub = Subscription(
                         user_id=user.id,
                         start_date=current_time,
@@ -645,7 +655,7 @@ async def _sync_subscription_from_panel_by_email(db: AsyncSession, user: User) -
                         traffic_used_gb=traffic_used_gb,
                         status=sub_status.value,
                         is_trial=False,
-                        remnawave_id=panel_user.id if settings.is_multi_tariff_enabled() else None,
+                        remnawave_id=None if _panel_id_taken else panel_user.id,
                         remnawave_short_id=_short_id,
                         remnawave_short_uuid=panel_user.short_uuid,
                         subscription_url=panel_user.subscription_url,

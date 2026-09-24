@@ -7,7 +7,7 @@ from typing import Any, Optional
 from zoneinfo import ZoneInfo
 
 import structlog
-from sqlalchemy import String, and_, cast, delete, func, select, update
+from sqlalchemy import String, and_, cast, delete, func, select, text, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -1953,6 +1953,8 @@ class RemnaWaveService:
                         except Exception:
                             pass
 
+            await self._backfill_subscription_panel_ids(db)
+
             logger.info(
                 '🎯 Синхронизация завершена',
                 stats=stats['created'],
@@ -1965,6 +1967,38 @@ class RemnaWaveService:
         except Exception as e:
             logger.error('❌ Критическая ошибка синхронизации пользователей', error=e)
             return {'created': 0, 'updated': 0, 'errors': 1, 'deleted': 0}
+
+    async def _backfill_subscription_panel_ids(self, db: AsyncSession) -> None:
+        """Copy ``users.remnawave_id`` onto the user's only subscription row when it is empty.
+
+        Single-tariff sync links the panel account via ``users.remnawave_id`` only, but
+        admin screens for a selected subscription (panel-info, devices, traffic, extend)
+        read ``subscriptions.remnawave_id`` strictly — imported clients showed up as
+        "not found in panel" and admin extends silently skipped the panel. Only users
+        with exactly one subscription row are touched, and only when no other row
+        already holds that panel id (the column is partially unique).
+        """
+        try:
+            result = await db.execute(
+                text(
+                    """
+                    UPDATE subscriptions s
+                    SET remnawave_id = u.remnawave_id
+                    FROM users u
+                    WHERE s.user_id = u.id
+                      AND s.remnawave_id IS NULL
+                      AND u.remnawave_id IS NOT NULL
+                      AND (SELECT count(*) FROM subscriptions s2 WHERE s2.user_id = u.id) = 1
+                      AND NOT EXISTS (SELECT 1 FROM subscriptions s3 WHERE s3.remnawave_id = u.remnawave_id)
+                    """
+                )
+            )
+            await db.commit()
+            if result.rowcount:
+                logger.info('🔗 Linked subscription rows to panel ids', count=result.rowcount)
+        except Exception as e:
+            logger.error('❌ Failed to backfill subscription panel ids', error=e)
+            await db.rollback()
 
     async def _sync_users_from_panel_multi(self, db: AsyncSession, sync_type: str) -> dict[str, int]:
         """Multi-tariff sync: match panel users to subscriptions by remnawave_id."""
