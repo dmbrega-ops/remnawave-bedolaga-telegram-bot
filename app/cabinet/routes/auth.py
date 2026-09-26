@@ -632,6 +632,10 @@ async def _sync_subscription_from_panel_by_email(db: AsyncSession, user: User) -
                     if not settings.is_multi_tariff_enabled():
                         # Admin screens for a selected subscription read subscriptions.remnawave_id
                         await link_subscription_panel_identity(db, existing_sub, panel_user.id)
+                    if existing_sub.tariff_id is None and settings.is_tariffs_mode():
+                        from app.database.crud.tariff import get_sole_active_tariff_id
+
+                        existing_sub.tariff_id = await get_sole_active_tariff_id(db)
                     logger.info(
                         'Updated subscription for email user',
                         email=user.email,
@@ -647,8 +651,14 @@ async def _sync_subscription_from_panel_by_email(db: AsyncSession, user: User) -
                             select(Subscription.id).where(Subscription.remnawave_id == panel_user.id).limit(1)
                         )
                     ).scalar_one_or_none()
+                    _tariff_id = None
+                    if settings.is_tariffs_mode():
+                        from app.database.crud.tariff import get_sole_active_tariff_id
+
+                        _tariff_id = await get_sole_active_tariff_id(db)
                     new_sub = Subscription(
                         user_id=user.id,
+                        tariff_id=_tariff_id,
                         start_date=current_time,
                         end_date=expire_at,
                         traffic_limit_gb=traffic_limit_gb,

@@ -1969,7 +1969,9 @@ class RemnaWaveService:
             return {'created': 0, 'updated': 0, 'errors': 1, 'deleted': 0}
 
     async def _backfill_subscription_panel_ids(self, db: AsyncSession) -> None:
-        """Copy ``users.remnawave_id`` onto the user's only subscription row when it is empty.
+        """Fill panel id (and tariff) on subscription rows created by panel imports.
+
+        Copies ``users.remnawave_id`` onto the user's only subscription row when it is empty.
 
         Single-tariff sync links the panel account via ``users.remnawave_id`` only, but
         admin screens for a selected subscription (panel-info, devices, traffic, extend)
@@ -1998,6 +2000,26 @@ class RemnaWaveService:
                 logger.info('🔗 Linked subscription rows to panel ids', count=result.rowcount)
         except Exception as e:
             logger.error('❌ Failed to backfill subscription panel ids', error=e)
+            await db.rollback()
+
+        # Imported rows carry no tariff, which breaks tariff-mode renewal screens.
+        # Assign it only when the choice is unambiguous (exactly one active tariff).
+        if not settings.is_tariffs_mode():
+            return
+        try:
+            from app.database.crud.tariff import get_sole_active_tariff_id
+
+            tariff_id = await get_sole_active_tariff_id(db)
+            if tariff_id is None:
+                return
+            result = await db.execute(
+                update(Subscription).where(Subscription.tariff_id.is_(None)).values(tariff_id=tariff_id)
+            )
+            await db.commit()
+            if result.rowcount:
+                logger.info('🏷 Assigned tariff to imported subscriptions', tariff_id=tariff_id, count=result.rowcount)
+        except Exception as e:
+            logger.error('❌ Failed to backfill subscription tariffs', error=e)
             await db.rollback()
 
     async def _sync_users_from_panel_multi(self, db: AsyncSession, sync_type: str) -> dict[str, int]:

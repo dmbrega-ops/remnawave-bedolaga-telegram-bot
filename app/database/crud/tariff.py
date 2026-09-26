@@ -69,6 +69,17 @@ async def get_all_tariffs(
     return result.scalars().all()
 
 
+async def get_sole_active_tariff_id(db: AsyncSession) -> int | None:
+    """Id of the only active tariff, or None when there are zero or several.
+
+    Subscriptions imported from the panel carry no tariff; with a single active
+    tariff there is no ambiguity which one they belong to.
+    """
+    result = await db.execute(select(Tariff.id).where(Tariff.is_active.is_(True)).limit(2))
+    ids = result.scalars().all()
+    return ids[0] if len(ids) == 1 else None
+
+
 async def get_tariff_by_id(
     db: AsyncSession,
     tariff_id: int,
