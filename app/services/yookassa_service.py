@@ -72,6 +72,8 @@ def _patch_yookassa_timeout() -> None:
 
     connect_timeout = max(1, int(getattr(settings, 'YOOKASSA_HTTP_CONNECT_TIMEOUT', 5) or 5))
     read_timeout = max(1, int(getattr(settings, 'YOOKASSA_HTTP_READ_TIMEOUT', 15) or 15))
+    proxy_url = (getattr(settings, 'YOOKASSA_PROXY_URL', None) or '').strip()
+    proxies = {'http': proxy_url, 'https': proxy_url} if proxy_url else None
 
     def execute_with_timeout(self, body, method, path, query_params, request_headers):
         session = self.get_session()
@@ -85,6 +87,7 @@ def _patch_yookassa_timeout() -> None:
                 json=body,
                 verify=self.configuration.verify,
                 timeout=(connect_timeout, read_timeout),
+                proxies=proxies,
             )
         finally:
             # Match upstream behaviour: close the session even on error.
@@ -106,6 +109,7 @@ def _patch_yookassa_timeout() -> None:
         'YooKassa ApiClient.execute monkey-patched with HTTP timeout',
         connect_timeout=connect_timeout,
         read_timeout=read_timeout,
+        via_proxy=bool(proxies),
     )
 
 

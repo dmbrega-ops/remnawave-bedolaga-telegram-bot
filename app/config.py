@@ -593,6 +593,9 @@ class Settings(BaseSettings):
     # back to the default below to avoid disabling protection entirely.
     YOOKASSA_HTTP_CONNECT_TIMEOUT: int = 5
     YOOKASSA_HTTP_READ_TIMEOUT: int = 10
+    # Optional outbound proxy for YooKassa API calls only (http://host:port or socks5://...).
+    # Needed when the bot's network cannot reach api.yookassa.ru directly.
+    YOOKASSA_PROXY_URL: str | None = None
 
     # Bounded thread pool for synchronous yookassa SDK calls. Default 4
     # is a balance between burst capacity (~8 req/s normal, ~2 req/s
