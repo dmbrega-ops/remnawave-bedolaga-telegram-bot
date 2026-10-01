@@ -3,10 +3,16 @@
 A single session-level request middleware replaces mapped unicode emoji with
 ``<tg-emoji>`` tags (see :func:`app.utils.brega_icons.emojify`) on every send/
 edit call, so the whole bot's message TEXT is themed without touching each
-template. It deliberately does NOT touch ``reply_markup`` button captions —
-those route by text/callback and stripping/altering them breaks routing
-(см. reply-menu). Applied only when the effective parse mode is HTML and the
-call carries no manual entities (custom-emoji tags need HTML parsing).
+template. Text/caption theming applies only when the effective parse mode is
+HTML and the call carries no manual entities (custom-emoji tags need HTML
+parsing).
+
+It also auto-wires custom-emoji icons on INLINE-keyboard buttons whose caption
+starts with a mapped glyph (see :func:`_theme_inline_buttons`): inline buttons
+route by ``callback_data``, so rewriting their text is safe. REPLY keyboards are
+left untouched — they route by button TEXT (см. reply-menu), so stripping their
+captions would break routing. Admin buttons (callback_data starting with
+``admin``) are skipped.
 """
 
 from __future__ import annotations
@@ -19,7 +25,7 @@ from aiogram.client.session.middlewares.base import BaseRequestMiddleware, NextR
 from aiogram.enums import ParseMode
 from aiogram.methods import TelegramMethod
 
-from app.utils.brega_icons import emojify
+from app.utils.brega_icons import emojify, split_leading_glyph
 
 
 def _effective_parse_mode(method: TelegramMethod[Any], bot: Bot) -> Any:
@@ -38,6 +44,31 @@ def _is_html(pm: Any) -> bool:
     return str(value).upper() == ParseMode.HTML.value.upper()
 
 
+def _theme_inline_buttons(reply_markup: Any) -> None:
+    """Авто-иконки для inline-кнопок: подпись начинается с глифа из набора →
+    проставляем ``icon_custom_emoji_id`` и срезаем ведущий глиф.
+
+    Только ``inline_keyboard`` (маршрутизируется по callback_data — менять текст
+    безопасно, в отличие от reply-клавиатур, что роутятся по тексту). Пропускаем:
+    reply-клавиатуры, кнопки с уже проставленной иконкой, админские кнопки
+    (callback_data начинается с ``admin``) и кнопки-«только глиф» (пустая подпись
+    недопустима в Telegram).
+    """
+    rows = getattr(reply_markup, 'inline_keyboard', None)
+    if not rows:
+        return
+    for row in rows:
+        for button in row:
+            if getattr(button, 'icon_custom_emoji_id', None):
+                continue
+            if (getattr(button, 'callback_data', None) or '').startswith('admin'):
+                continue
+            emoji_id, rest = split_leading_glyph(getattr(button, 'text', None))
+            if emoji_id and rest.strip():
+                button.icon_custom_emoji_id = emoji_id
+                button.text = rest
+
+
 class BregaEmojiMiddleware(BaseRequestMiddleware):
     async def __call__(
         self,
@@ -46,6 +77,8 @@ class BregaEmojiMiddleware(BaseRequestMiddleware):
         method: TelegramMethod[Any],
     ) -> Any:
         try:
+            # Инлайн-кнопки — независимо от parse_mode (иконки не парсятся как HTML).
+            _theme_inline_buttons(getattr(method, 'reply_markup', None))
             if _is_html(_effective_parse_mode(method, bot)):
                 # Text (SendMessage, EditMessageText, …) — only when no manual entities.
                 if getattr(method, 'text', None) and not getattr(method, 'entities', None):

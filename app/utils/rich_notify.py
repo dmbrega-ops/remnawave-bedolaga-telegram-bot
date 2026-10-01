@@ -28,6 +28,7 @@ from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError, Teleg
 from aiogram.types import InlineKeyboardMarkup, InputRichMessage
 
 from app.config import settings
+from app.utils.brega_icons import emojify
 
 # Тот же предел, что и у rich-уведомлений админ-чата: ограничение самого Telegram,
 # а не наше — держим его в одном месте, чтобы значения не разъехались.
@@ -119,7 +120,9 @@ def build_notification_rich_html(text: str, *, logo_url: str = '') -> str | None
     if not any(block.startswith(('<h4>', '<p>')) for block in blocks):
         return None
 
-    return ''.join(blocks)
+    # rich_message минует BregaEmojiMiddleware — тематизируем эмодзи здесь, как в
+    # build_main_menu_rich_html (кнопки добавляются вызывающим уже после).
+    return emojify(''.join(blocks)) or ''
 
 
 async def try_send_rich_notification(

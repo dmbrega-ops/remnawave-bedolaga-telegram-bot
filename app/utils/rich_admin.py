@@ -26,6 +26,7 @@ from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError, Teleg
 from aiogram.types import InlineKeyboardMarkup, InputRichMessage
 
 from app.config import settings
+from app.utils.brega_icons import emojify
 from app.utils.rich_buttons import render_keyboard_as_rich_html
 from app.utils.rich_menu import _looks_like_unsupported
 
@@ -172,6 +173,9 @@ async def try_send_rich_admin_message(
     """
     if not is_rich_admin_enabled():
         return False
+    # rich_message минует BregaEmojiMiddleware — тематизируем эмодзи до проверки
+    # лимита (теги <tg-emoji> добавляют длину) и до врезки кнопок.
+    rich_html = emojify(rich_html) or rich_html
     if len(rich_html) > RICH_TEXT_LIMIT:
         return False
 

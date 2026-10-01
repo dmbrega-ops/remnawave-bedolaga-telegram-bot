@@ -261,6 +261,74 @@ async def show_main_menu(
         await callback.answer()
 
 
+async def answer_main_menu(message: types.Message, db_user: User, db: AsyncSession) -> None:
+    """Render the full main menu as a FRESH message (rich/logo), like ``/start``.
+
+    Used by the persistent reply-keyboard «Профиль» shortcut. The old shim sent a
+    ``'⏳'`` text placeholder and let the edit-based renderer fall back to a reduced
+    text menu without the logo/custom icons (see reply_menu v1 trade-off). Answering
+    a fresh message goes through the same rich/media path as ``/start`` instead.
+    """
+    if db_user is None:
+        return
+
+    texts = get_texts(db_user.language)
+
+    db_user.last_activity = datetime.now(UTC)
+    await db.commit()
+
+    _subs = getattr(db_user, 'subscriptions', None) or []
+    has_active_subscription = any(sub.is_active or getattr(sub, 'actual_status', None) == 'limited' for sub in _subs)
+    subscription_is_active = has_active_subscription
+
+    draft_exists = await has_subscription_checkout_draft(db_user.id)
+    show_resume_checkout = should_offer_checkout_resume(db_user, draft_exists)
+
+    try:
+        has_saved_cart = await user_cart_service.has_user_cart(db_user.id)
+    except Exception as e:
+        logger.error('Ошибка проверки сохраненной корзины для пользователя', db_user_id=db_user.id, error=e)
+        has_saved_cart = False
+
+    if has_active_subscription and subscription_is_active:
+        has_saved_cart = False
+
+    is_admin = settings.is_admin(db_user.telegram_id)
+    is_moderator = (not is_admin) and SupportSettingsService.is_moderator(db_user.telegram_id)
+
+    custom_buttons = []
+    if not settings.is_text_main_menu_mode():
+        custom_buttons = await MainMenuButtonService.get_buttons_for_user(
+            db,
+            is_admin=is_admin,
+            has_active_subscription=has_active_subscription,
+            subscription_is_active=subscription_is_active,
+        )
+
+    keyboard = await get_main_menu_keyboard_async(
+        db=db,
+        user=db_user,
+        language=db_user.language,
+        is_admin=is_admin,
+        is_moderator=is_moderator,
+        has_had_paid_subscription=db_user.has_had_paid_subscription,
+        has_active_subscription=has_active_subscription,
+        subscription_is_active=subscription_is_active,
+        balance_kopeks=db_user.balance_kopeks,
+        subscription=db_user.subscription,
+        show_resume_checkout=show_resume_checkout,
+        has_saved_cart=has_saved_cart,
+        custom_buttons=custom_buttons,
+    )
+
+    from app.handlers.start import answer_menu_with_media
+    from app.utils.rich_menu import try_answer_rich_main_menu
+
+    if not await try_answer_rich_main_menu(message, db_user, texts, db, keyboard):
+        menu_text = await get_main_menu_text(db_user, texts, db)
+        await answer_menu_with_media(message, menu_text, keyboard, db)
+
+
 async def handle_profile_unavailable(callback: types.CallbackQuery) -> None:
     language = getattr(callback.from_user, 'language_code', None) or settings.DEFAULT_LANGUAGE
     try:

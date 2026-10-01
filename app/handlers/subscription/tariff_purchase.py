@@ -38,6 +38,93 @@ from app.utils.promo_offer import get_user_active_promo_discount_percent
 logger = structlog.get_logger(__name__)
 
 
+# ISO 3166-1 alpha-2 → русское название страны. Флаг вычисляется из кода
+# (regional indicator symbols), а не хардкодится построчно на каждую ноду.
+COUNTRY_NAMES_RU: dict[str, str] = {
+    'NL': 'Нидерланды',
+    'LV': 'Латвия',
+    'FR': 'Франция',
+    'US': 'США',
+    'DE': 'Германия',
+    'GB': 'Великобритания',
+    'RU': 'Россия',
+    'UA': 'Украина',
+    'PL': 'Польша',
+    'FI': 'Финляндия',
+    'SE': 'Швеция',
+    'NO': 'Норвегия',
+    'IT': 'Италия',
+    'ES': 'Испания',
+    'CH': 'Швейцария',
+    'AT': 'Австрия',
+    'CZ': 'Чехия',
+    'RO': 'Румыния',
+    'TR': 'Турция',
+    'AE': 'ОАЭ',
+    'CA': 'Канада',
+    'JP': 'Япония',
+    'SG': 'Сингапур',
+    'HK': 'Гонконг',
+    'KR': 'Южная Корея',
+    'AU': 'Австралия',
+    'IN': 'Индия',
+    'BR': 'Бразилия',
+    'KZ': 'Казахстан',
+    'AM': 'Армения',
+    'GE': 'Грузия',
+    'MD': 'Молдова',
+    'LT': 'Литва',
+    'EE': 'Эстония',
+}
+
+
+def _flag_from_iso(code: str) -> str:
+    """ISO alpha-2 → эмодзи-флаг через regional indicator symbols (U+1F1E6..U+1F1FF)."""
+    code = (code or '').upper()
+    if len(code) != 2 or not code.isalpha():
+        return '🌍'
+    return ''.join(chr(0x1F1E6 + ord(ch) - ord('A')) for ch in code)
+
+
+async def get_active_node_countries_block(header: str = '🌍 <b>Доступные страны:</b>') -> str:
+    """Формирует блок «страны с флагами» из активных нод Remnawave.
+
+    Источник — ноды панели (не сквады): уникальные ``countryCode`` активных нод
+    (``isConnected and not isDisabled``). Порядок — русский алфавит по названию.
+    Кэш 300 с (TTL 5 мин), чтобы не бить API панели на каждое открытие экрана.
+    Пустой результат (нет активных нод / ошибка API) → пустая строка, блок не рисуется.
+    """
+    from app.services.remnawave_service import RemnaWaveService
+    from app.utils.cache import cache, cache_key
+
+    ck = cache_key('active_node_countries', header)
+    cached = await cache.get(ck)
+    if cached is not None:
+        return cached
+
+    try:
+        nodes = await RemnaWaveService().get_all_nodes()
+        codes = {
+            (node.get('country_code') or '').upper()
+            for node in nodes
+            if node.get('is_connected') and not node.get('is_disabled') and node.get('country_code')
+        }
+        if not codes:
+            return ''
+        # Русский алфавит: сортировка по названию. Кириллица в Unicode идёт по
+        # коду ≈ по алфавиту (А..Я, а..я), lower() выравнивает регистр.
+        items = sorted(
+            ((code, COUNTRY_NAMES_RU.get(code, code)) for code in codes),
+            key=lambda pair: pair[1].lower(),
+        )
+        block = '\n'.join([header] + [f'{_flag_from_iso(code)} {name}' for code, name in items])
+        await cache.set(ck, block, 300)
+        return block
+    except Exception as error:
+        logger.error('Ошибка формирования блока стран из нод', error=error)
+        return ''
+
+
 async def _persist_failed_refund(
     user_id: int,
     amount_kopeks: int,
@@ -504,6 +591,7 @@ def format_tariff_info_for_user(
     tariff: Tariff,
     language: str,
     discount_percent: int = 0,
+    countries_block: str = '',
 ) -> str:
     """Форматирует информацию о тарифе для пользователя."""
     texts = get_texts(language)
@@ -522,6 +610,9 @@ def format_tariff_info_for_user(
         text += texts.t('TARIFF_PURCHASE_YOUR_DISCOUNT', '\n🎁 <b>Ваша скидка: {percent}%</b>\n').format(
             percent=discount_percent
         )
+
+    if countries_block:
+        text += f'\n{countries_block}\n'
 
     # Для суточных тарифов не показываем выбор периода
     is_daily = getattr(tariff, 'is_daily', False)
@@ -784,6 +875,10 @@ async def format_custom_tariff_preview(
     text += texts.t('TARIFF_PURCHASE_DEVICES_LINE', '📱 Устройств: {devices}\n').format(
         devices=Texts.format_device_limit(tariff.device_limit)
     )
+
+    countries_block = await get_active_node_countries_block()
+    if countries_block:
+        text += f'\n{countries_block}\n'
 
     if has_discount:
         text += texts.t('TARIFF_PURCHASE_DISCOUNT_LINE', '\n🎁 <b>Скидка: {percent}%</b>\n').format(
@@ -1091,8 +1186,9 @@ async def _proceed_with_selected_tariff(
         elif can_custom_traffic:
             # Только кастомный трафик - сначала выбираем период из period_prices
             # Показываем обычный выбор периода, трафик будет на следующем шаге
+            countries_block = await get_active_node_countries_block()
             await callback.message.edit_text(
-                format_tariff_info_for_user(tariff, db_user.language)
+                format_tariff_info_for_user(tariff, db_user.language, countries_block=countries_block)
                 + texts.t(
                     'TARIFF_PURCHASE_TRAFFIC_SETUP_HINT',
                     '\n\n📊 <i>После выбора периода вы сможете настроить трафик</i>',
@@ -1104,8 +1200,9 @@ async def _proceed_with_selected_tariff(
             )
         else:
             # Для обычного тарифа показываем выбор периода
+            countries_block = await get_active_node_countries_block()
             await callback.message.edit_text(
-                format_tariff_info_for_user(tariff, db_user.language),
+                format_tariff_info_for_user(tariff, db_user.language, countries_block=countries_block),
                 reply_markup=get_tariff_periods_keyboard(
                     tariff, db_user.language, db_user=db_user, back_callback=back_callback
                 ),
@@ -2802,20 +2899,26 @@ async def show_tariff_extend(
 
     actual_device_limit = subscription.device_limit or tariff.device_limit
 
+    renew_text = texts.t(
+        'TARIFF_RENEW_TITLE',
+        '🔄 <b>Продление подписки</b>{discount_hint}\n\n'
+        '📦 Тариф: <b>{name}</b>\n'
+        '📊 Трафик: {traffic}\n'
+        '📱 Устройств: {devices}\n\n'
+        'Выберите период продления:',
+    ).format(
+        discount_hint=discount_hint,
+        name=html.escape(tariff.name),
+        traffic=traffic,
+        devices=actual_device_limit,
+    )
+
+    countries_block = await get_active_node_countries_block()
+    if countries_block:
+        renew_text += f'\n\n{countries_block}'
+
     await callback.message.edit_text(
-        texts.t(
-            'TARIFF_RENEW_TITLE',
-            '🔄 <b>Продление подписки</b>{discount_hint}\n\n'
-            '📦 Тариф: <b>{name}</b>\n'
-            '📊 Трафик: {traffic}\n'
-            '📱 Устройств: {devices}\n\n'
-            'Выберите период продления:',
-        ).format(
-            discount_hint=discount_hint,
-            name=html.escape(tariff.name),
-            traffic=traffic,
-            devices=actual_device_limit,
-        ),
+        renew_text,
         reply_markup=get_tariff_extend_keyboard(
             tariff,
             db_user.language,

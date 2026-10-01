@@ -106,6 +106,7 @@ GLYPH_TO_ID: dict[str, str] = {
 # Longest glyphs first so multi-codepoint emoji win over any prefix.
 _GLYPH_ALT = '|'.join(re.escape(g) for g in sorted(GLYPH_TO_ID, key=len, reverse=True))
 _EMOJI_RE = re.compile('(' + _GLYPH_ALT + ')(' + _FE0F + '?)')
+_LEADING_GLYPH_RE = re.compile('^(' + _GLYPH_ALT + ')(' + _FE0F + '?)')
 _TGEMOJI_SPAN_RE = re.compile(r'<tg-emoji\b[^>]*>.*?</tg-emoji>', re.DOTALL)
 
 
@@ -130,3 +131,24 @@ def emojify(text: str | None) -> str | None:
         last = span.end()
     out.append(_EMOJI_RE.sub(_wrap, text[last:]))
     return ''.join(out)
+
+
+def split_leading_glyph(text: str | None) -> tuple[str | None, str]:
+    """Если строка начинается с маппленного глифа — вернуть (emoji_id, остаток без
+    ведущего глифа и одного пробела). Иначе (None, исходный текст).
+
+    Для авто-иконок на inline-кнопках: ведущий глиф → ``icon_custom_emoji_id``,
+    подпись без него. Только для глифов, реально присутствующих в наборе.
+    """
+    if not text:
+        return None, text or ''
+    match = _LEADING_GLYPH_RE.match(text)
+    if not match:
+        return None, text
+    emoji_id = GLYPH_TO_ID.get(match.group(1))
+    if not emoji_id:
+        return None, text
+    rest = text[match.end() :]
+    if rest.startswith(' '):
+        rest = rest[1:]
+    return emoji_id, rest

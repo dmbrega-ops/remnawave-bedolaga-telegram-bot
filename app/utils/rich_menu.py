@@ -46,6 +46,7 @@ from app.database.crud.tariff import get_tariff_by_id
 from app.database.crud.user_message import get_random_active_message
 from app.database.models import User
 from app.localization.texts import Texts
+from app.utils.brega_icons import emojify
 from app.utils.formatters import format_username_link
 from app.utils.miniapp_buttons import build_miniapp_startapp_url
 from app.utils.promo_offer import build_promo_offer_hint, build_test_access_hint
@@ -576,7 +577,12 @@ async def build_main_menu_rich_html(user: User, texts, db: AsyncSession) -> str:
     action_prompt = texts.t('MAIN_MENU_ACTION_PROMPT', 'Выберите действие:')
     blocks.append(f'<footer>{_rich_text(action_prompt)}</footer>')
 
-    return ''.join(blocks)
+    # rich_message не проходит через BregaEmojiMiddleware (он тематизирует только
+    # text/caption), поэтому литеральные unicode-эмодзи (👤, 📱, 💰 и т.п.) уходили
+    # стандартными. Прогоняем итоговый HTML через emojify — он оборачивает
+    # маппленные глифы в <tg-emoji> (rich их поддерживает) и идемпотентен: уже
+    # готовые <tg-emoji> из шаблонов/_rich_text не трогает.
+    return emojify(''.join(blocks)) or ''
 
 
 _TG_TIME_TAG_RE = re.compile(r'<tg-time\b[^>]*>(.*?)</tg-time>', re.DOTALL | re.IGNORECASE)

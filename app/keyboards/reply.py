@@ -67,17 +67,14 @@ def get_nav_reply_keyboard(language: str = 'ru') -> ReplyKeyboardMarkup:
                 KeyboardButton(
                     text=strip_leading_emoji(labels['profile']),
                     icon_custom_emoji_id=BREGA_ICON['profile'],
-                    style='success',
                 ),
                 KeyboardButton(
                     text=strip_leading_emoji(labels['subscription']),
                     icon_custom_emoji_id=BREGA_ICON['subscription'],
-                    style='success',
                 ),
                 KeyboardButton(
                     text=strip_leading_emoji(labels['info']),
                     icon_custom_emoji_id=BREGA_ICON['info'],
-                    style='primary',
                 ),
             ]
         ],

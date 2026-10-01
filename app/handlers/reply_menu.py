@@ -77,9 +77,12 @@ async def _open_section(message: types.Message, db_user: User, db: AsyncSession,
 
 async def open_profile(message: types.Message, db_user: User, state: FSMContext, db: AsyncSession) -> None:
     await state.clear()
-    from app.handlers.menu import show_main_menu
+    # Render the main menu as a fresh rich/logo message (same path as /start),
+    # not via the '⏳'+edit shim which fell back to a reduced text menu without
+    # the logo and custom icons.
+    from app.handlers.menu import answer_main_menu
 
-    await _open_section(message, db_user, db, 'menu_profile', show_main_menu)
+    await answer_main_menu(message, db_user, db)
 
 
 async def open_subscription(message: types.Message, db_user: User, state: FSMContext, db: AsyncSession) -> None:
