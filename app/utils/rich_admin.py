@@ -29,6 +29,7 @@ from app.config import settings
 from app.utils.brega_icons import emojify
 from app.utils.rich_buttons import render_keyboard_as_rich_html
 from app.utils.rich_menu import _looks_like_unsupported
+from app.utils.timezone import format_local_datetime
 
 
 logger = structlog.get_logger(__name__)
@@ -77,7 +78,9 @@ def _mark_rich_admin_unavailable(error: Exception) -> None:
 def rich_footer_now(label: str = 'Remnawave Bedolaga Bot') -> str:
     """Футер с меткой и временем: tg-time рендерится в таймзоне админа."""
     now = datetime.now(UTC)
-    stamp = f'<tg-time unix="{int(now.timestamp())}" format="dt">{now.strftime("%d.%m.%Y %H:%M")} UTC</tg-time>'
+    stamp = (
+        f'<tg-time unix="{int(now.timestamp())}" format="dt">{format_local_datetime(now, "%d.%m.%Y %H:%M")}</tg-time>'
+    )
     return f'<footer>{html.escape(label)} · {stamp}</footer>'
 
 
