@@ -1104,6 +1104,9 @@ class Settings(BaseSettings):
     CISPAY_SHOP_ID: str | None = None  # X-Shop-ID — UUID магазина
     CISPAY_API_KEY: str | None = None  # X-Api-Key — секретный ключ (cis_sec_...)
     CISPAY_BASE_URL: str = 'https://api.cispay.app'
+    # Optional outbound proxy for cisPay API calls only (http://host:port).
+    # Needed when the bot's network reaches api.cispay.app unreliably.
+    CISPAY_PROXY_URL: str | None = None
     CISPAY_DISPLAY_NAME: str = 'CisPay'
     CISPAY_CURRENCY: str = 'RUB'
     CISPAY_MIN_AMOUNT_KOPEKS: int = 10000  # 100₽

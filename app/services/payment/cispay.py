@@ -191,6 +191,16 @@ class CisPayPaymentMixin:
                 logger.warning('cisPay callback: отсутствуют обязательные поля', payload=payload)
                 return False
 
+            # Sandbox and blocked-buyer transactions never move real money:
+            # acknowledge (2xx stops retries) but never touch the balance.
+            if payload.get('is_sandbox') is True:
+                logger.warning(
+                    'cisPay callback: sandbox transaction, not credited',
+                    order_id=our_order_id,
+                    status=cispay_status,
+                )
+                return True
+
             cispay_crud = import_module('app.database.crud.cispay')
             payment = await cispay_crud.get_cispay_payment_by_order_id(db, our_order_id)
             if not payment:
@@ -539,6 +549,14 @@ class CisPayPaymentMixin:
                     order_id=None if payment.cispay_payment_id else payment.order_id,
                 )
                 cispay_status = (status_data.get('status') or '').strip().upper()
+
+                if status_data.get('is_sandbox') is True:
+                    logger.warning('cisPay API check: sandbox transaction, not credited', order_id=payment.order_id)
+                    return {
+                        'payment': payment,
+                        'status': payment.status or 'pending',
+                        'is_paid': False,
+                    }
 
                 if cispay_status:
                     internal_status, is_paid = CISPAY_STATUS_MAP.get(cispay_status, ('pending', False))

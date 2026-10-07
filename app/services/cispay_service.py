@@ -81,6 +81,7 @@ class CisPayService:
                 json=json_payload,
                 params=params,
                 headers=self._headers(),
+                proxy=(settings.CISPAY_PROXY_URL or '').strip() or None,
             ) as response:
                 data = await response.json(content_type=None)
                 if response.status >= 400:

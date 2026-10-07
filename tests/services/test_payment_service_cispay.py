@@ -276,6 +276,26 @@ async def test_process_cispay_callback_amount_mismatch(monkeypatch: pytest.Monke
 
 
 @pytest.mark.anyio('asyncio')
+async def test_process_cispay_callback_sandbox_never_credits(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Sandbox / blocked-buyer webhooks are acknowledged but never move the balance."""
+    payment = FakeCisPayPayment()
+    update_mock = _patch_callback_crud(monkeypatch, payment)
+
+    service = _make_service()
+    finalize_mock = AsyncMock(return_value=True)
+    monkeypatch.setattr(service, '_finalize_cispay_payment', finalize_mock, raising=False)
+
+    payload = _paid_webhook_payload()
+    payload['is_sandbox'] = True
+    result = await service.process_cispay_callback(DummySession(), payload)
+
+    assert result is True
+    finalize_mock.assert_not_awaited()
+    update_mock.assert_not_awaited()
+    assert payment.is_paid is False
+
+
+@pytest.mark.anyio('asyncio')
 async def test_process_cispay_callback_already_paid_is_idempotent(monkeypatch: pytest.MonkeyPatch) -> None:
     payment = FakeCisPayPayment(status='success', is_paid=True)
     _patch_callback_crud(monkeypatch, payment)
