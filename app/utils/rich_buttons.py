@@ -24,6 +24,8 @@ import html
 
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
+from app.utils.brega_icons import neutral_style, split_leading_glyph
+
 
 # InputRichBlockButtons: «List of 1-8 buttons to send». Более длинный ряд сервер
 # отвергнет, поэтому режем сами — иначе одна широкая строка меню уронила бы всё
@@ -46,10 +48,23 @@ def _button_text_html(button: InlineKeyboardButton) -> str:
     У ``RichMessageButton`` нет ``icon_custom_emoji_id``, но текст кнопки —
     это RichText, в который ``RichTextCustomEmoji`` входит. Так иконка не теряется.
     """
-    text = html.escape(button.text or '')
-    if button.icon_custom_emoji_id:
-        return f'<tg-emoji emoji-id="{_attr(button.icon_custom_emoji_id)}"></tg-emoji>{text}'
+    icon_id = button.icon_custom_emoji_id
+    raw = button.text or ''
+    # Rich buttons bypass BregaEmojiMiddleware, so auto-wire the leading glyph here.
+    if not icon_id and not _is_admin(button):
+        icon_id, rest = split_leading_glyph(raw)
+        if icon_id and rest.strip():
+            raw = rest
+        else:
+            icon_id = None
+    text = html.escape(raw)
+    if icon_id:
+        return f'<tg-emoji emoji-id="{_attr(icon_id)}"></tg-emoji>{text}'
     return text
+
+
+def _is_admin(button: InlineKeyboardButton) -> bool:
+    return (button.callback_data or '').startswith('admin')
 
 
 def _render_button(button: InlineKeyboardButton, *, allow_web_app: bool) -> str | None:
@@ -104,6 +119,8 @@ def _render_button(button: InlineKeyboardButton, *, allow_web_app: bool) -> str 
         attrs.append('type="disabled"')
 
     style = (button.style or '').strip().lower()
+    if not _is_admin(button):
+        style = neutral_style(style) or ''
     if style in _ALLOWED_STYLES:
         # link допустим только у callback-кнопок; на остальных сервер отвергнет.
         if style != _LINK_STYLE or button.callback_data:

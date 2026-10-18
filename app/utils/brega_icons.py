@@ -1,106 +1,204 @@
 """Custom-emoji icon ids for bot buttons + text theming.
 
-Source set: `by_brega` (title "Brega VPN", type=custom_emoji, 36 emoji), created
-by the bot itself — so the bot may use these without Telegram Premium. Ids
-fetched via getStickerSet 2026-09-17 (full set refresh; the old `brega_by` set
-was replaced, all ids changed). The comment after each id is the native glyph.
+Source set: `brega_line_by_brega_vpn_billing_bot` (title "Brega VPN line",
+type=custom_emoji, 129 emoji), created by the bot itself via Bot API — so the bot
+may use these without Telegram Premium. Monochrome Lucide line icons (ISC) in the
+Ponteto green #22c55e; ❌/🚫/⛔/🛑/❗ red, ⚠️ amber. Built 2026-10-18; it replaced
+the colourful `by_brega` set (kept on Telegram for rollback). The comment after
+each id is the native glyph and the Lucide icon name.
 
 - Buttons: ``icon_custom_emoji_id=BREGA_ICON['<key>']`` + ``strip_leading_emoji``.
 - Message text: themed centrally by BregaEmojiMiddleware via ``emojify`` /
   ``GLYPH_TO_ID`` — do NOT hand-wrap <tg-emoji> in templates.
+- Button colours: client buttons are neutral grey, only ``danger`` survives
+  (see :func:`neutral_style`).
 """
 
 import re
 
 BREGA_ICON: dict[str, str] = {
-    'connect': '5287352028413079835',   # 🔑
-    'extend': '5287566016568669965',    # 🕒 (set has no ⏰; clock = "time left/extend")
-    'devices': '5287284773520191914',   # 📱
-    'privacy': '5287411908847121699',   # 🛡
-    'ticket': '5289546627852314721',    # 🎫
-    'ios': '5287272391129478266',       # 🍏
-    'android': '5287743484617340136',   # 🤖
-    'macos': '5287716954604351965',     # 🖥
-    'windows': '5287570178391977273',   # 💻
-    'balance': '5287742870437013079',   # 💰
-    'buy': '5287733812350985564',       # 💎
-    'traffic': '5287530626038146718',   # 📊 (set has no 📈; chart)
-    'tariff': '5287291739957145701',    # 📦
-    'info': '5287256332246761137',      # ℹ️
-    'list': '5287242300588599215',      # 📋
-    'link': '5287719638958909492',      # 🔗
-    'language': '5287753367337082025',  # 🌐
-    'subscription': '5287284773520191914',  # 📱 (single phone in this set → same as devices)
-    'settings': '5287437468197497073',  # ⚙️
-    'gift': '5287601677682123015',      # 🎁
-    'autopay': '5287285928866392056',   # 💳
-    'reset': '5287741143860160953',     # 🔄
-    'profile': '5287489261208119096',   # 👤
-    'install': '5287282626036544364',   # 📲
-    # New glyphs available in this set (wire onto their buttons when useful):
-    'back': '5287716190100171381',      # ⬅️ → Назад
-    'support': '5287288278213502348',   # 🛠 → Техподдержка
-    'referrals': '5287266086117485763', # 🤝 → Партнёрка
-    'rename': '5287250010054895565',    # ✏️ → переименовать устройство
-    'unknown': '5287588066930765010',   # ❓
-    'tag': '5287684033680028976',       # 🏷️
-    'email': '5287677913351629571',     # 📧
-    'lock': '5287364170285626919',      # 🔒
-    'unlimited': '5287521640966565836', # ♾️
+    'connect': '5377770504562191368',  # 🔑 key-round
+    'extend': '5379574854682977560',  # 🕒 clock-3
+    'devices': '5377608081783957640',  # 📱 smartphone
+    'privacy': '5380071228348343945',  # 🛡 shield-check
+    'ticket': '5377330837350037166',  # 🎫 ticket
+    'ios': '5380049263885589852',  # 🍏 apple
+    'android': '5380061375693366672',  # 🤖 bot
+    'macos': '5377805963812184320',  # 🖥 monitor
+    'windows': '5379620845192782713',  # 💻 laptop
+    'balance': '5377585125183758983',  # 💰 wallet
+    'buy': '5377778613460443376',  # 💎 gem
+    'traffic': '5379785952325575104',  # 📊 chart-column
+    'tariff': '5377497417656605187',  # 📦 package
+    'info': '5377703030625968975',  # ℹ info
+    'list': '5377656370101265645',  # 📋 clipboard-list
+    'link': '5377400295561143869',  # 🔗 link
+    'language': '5379712637233831621',  # 🌐 globe
+    'subscription': '5377608081783957640',  # 📱 smartphone
+    'settings': '5377730295078366773',  # ⚙ settings
+    'gift': '5377782040844347851',  # 🎁 gift
+    'autopay': '5377623509306483812',  # 💳 credit-card
+    'reset': '5377319721974668892',  # 🔄 refresh-cw
+    'profile': '5379823249821573695',  # 👤 user
+    'install': '5379592532768366866',  # 📲 download
+    'back': '5377685189331819751',  # ⬅ arrow-left
+    'support': '5377343245510561435',  # 🛠 wrench
+    'referrals': '5377606063149330225',  # 🤝 handshake
+    'rename': '5377829878190092004',  # ✏ pencil
+    'unknown': '5377796059617602935',  # ❓ circle-question-mark
+    'tag': '5377813905206715943',  # 🏷 tag
+    'email': '5377684892979077013',  # 📧 mail
+    'lock': '5377749107035122738',  # 🔒 lock
+    'unlimited': '5379695788077134120',  # ♾ infinity
 }
 
 
-# --- Auto-replace of unicode emoji with by_brega custom emoji in MESSAGE TEXT ---
+# --- Auto-replace of unicode emoji with brega_line custom emoji in MESSAGE TEXT ---
 # Maps each glyph (без variation selector U+FE0F) to its custom_emoji_id. Used by
 # BregaEmojiMiddleware to rewrite outgoing text/caption. NOT for button captions.
 _FE0F = '️'
 
 GLYPH_TO_ID: dict[str, str] = {
-    '❓': '5287588066930765010',
-    '⬅': '5287716190100171381',
-    '🛠': '5287288278213502348',
-    '🤝': '5287266086117485763',
-    '✏': '5287250010054895565',
-    '📲': '5287282626036544364',
-    '🏷': '5287684033680028976',
-    '🔄': '5287741143860160953',
-    '💳': '5287285928866392056',
-    '🎁': '5287601677682123015',
-    '⚙': '5287437468197497073',
-    '👤': '5287489261208119096',
-    '📋': '5287242300588599215',
-    '🔗': '5287719638958909492',
-    'ℹ': '5287256332246761137',
-    '♾': '5287521640966565836',
-    '📦': '5287291739957145701',
-    '📊': '5287530626038146718',
-    '💎': '5287733812350985564',
-    '💰': '5287742870437013079',
-    '📡': '5287256761743485163',
-    '📺': '5287367284136913974',
-    '🖥': '5287716954604351965',
-    '💻': '5287570178391977273',
-    '🤖': '5287743484617340136',
-    '🍏': '5287272391129478266',
-    '📧': '5287677913351629571',
-    '🎫': '5289546627852314721',
-    '🔒': '5287364170285626919',
-    '📱': '5287284773520191914',
-    '🔑': '5287352028413079835',
-    '🕒': '5287566016568669965',
-    '🌐': '5287753367337082025',
-    '📅': '5287275672484490360',
-    '✅': '5287463749102382131',
-    '🛡': '5287411908847121699',
-    # Aliases: glyph seen in text → nearest set image (fallback keeps original glyph).
-    '🗓': '5287275672484490360',  # spiral calendar → 📅
-    '📈': '5287530626038146718',  # chart up → 📊
-    '🍎': '5287272391129478266',  # red apple → 🍏
-    '⏳': '5287566016568669965',  # hourglass → 🕒
-    '⏰': '5287566016568669965',  # alarm → 🕒
-    '✉': '5287677913351629571',  # envelope → 📧
-    '🌍': '5287753367337082025',  # globe EU → 🌐
-    '🔓': '5287364170285626919',  # open lock → 🔒
+    '❌': '5377302645184703818',  # x
+    '✅': '5377379963185964956',  # circle-check
+    '💳': '5377623509306483812',  # credit-card
+    '⚠': '5377559840711289080',  # triangle-alert
+    '💰': '5377585125183758983',  # wallet
+    '📱': '5377608081783957640',  # smartphone
+    '📊': '5379785952325575104',  # chart-column
+    '🔄': '5377319721974668892',  # refresh-cw
+    'ℹ': '5377703030625968975',  # info
+    '📅': '5379852661757617007',  # calendar
+    '📦': '5377497417656605187',  # package
+    '⬅': '5377685189331819751',  # arrow-left
+    '🔙': '5377685189331819751',  # arrow-left
+    '🎁': '5377782040844347851',  # gift
+    '🚫': '5379923777826106450',  # ban
+    '🗑': '5379817473090561630',  # trash-2
+    '⏳': '5377532357215563447',  # hourglass
+    '⌛': '5377532357215563447',  # hourglass
+    '📋': '5377656370101265645',  # clipboard-list
+    '👥': '5377600131799490550',  # users
+    '🎉': '5377629170073381403',  # party-popper
+    '✏': '5377829878190092004',  # pencil
+    '💡': '5379752868192494517',  # lightbulb
+    '🔗': '5377400295561143869',  # link
+    '⏰': '5377322612487659420',  # alarm-clock
+    '🌍': '5377487925778885500',  # earth
+    '⚙': '5377730295078366773',  # settings
+    '📈': '5379992553137414798',  # trending-up
+    '💎': '5377778613460443376',  # gem
+    '🌐': '5379712637233831621',  # globe
+    '🎫': '5377330837350037166',  # ticket
+    '🎟': '5377330837350037166',  # ticket
+    '⚡': '5377453475846209391',  # zap
+    '❓': '5377796059617602935',  # circle-question-mark
+    '🎯': '5377376982478663459',  # target
+    '👤': '5379823249821573695',  # user
+    '🤝': '5377606063149330225',  # handshake
+    '➕': '5379941765149138958',  # plus
+    '📝': '5379821205417141950',  # notebook-pen
+    '💸': '5377714438059110563',  # banknote-arrow-down
+    '📄': '5377345380109294323',  # file-text
+    '🧪': '5377309796305252656',  # flask-conical
+    '📨': '5377784046594073932',  # mail-open
+    '🚀': '5377526245477098012',  # rocket
+    '🛠': '5377343245510561435',  # wrench
+    '🧩': '5377410470338672118',  # puzzle
+    '📌': '5379752412925961731',  # pin
+    '🔒': '5377749107035122738',  # lock
+    '🏦': '5377565385514066827',  # landmark
+    '📡': '5379795607412058681',  # radio-tower
+    '🏆': '5377541174783418766',  # trophy
+    '🧑': '5377407163213847992',  # circle-user
+    '⬇': '5377591215447383471',  # arrow-down
+    '👇': '5377591215447383471',  # arrow-down
+    '🔍': '5379781206386713718',  # search
+    '🔎': '5379781206386713718',  # search
+    '🪙': '5377825312639853442',  # coins
+    '🏠': '5377432563650441713',  # house
+    '⏭': '5377437769150804764',  # skip-forward
+    '👁': '5379903488400598807',  # eye
+    '🔧': '5377721417380962579',  # settings-2
+    '🗓': '5377370810610656879',  # calendar-days
+    '🤖': '5380061375693366672',  # bot
+    '⭐': '5377785545537660611',  # star
+    '⏸': '5379730856485104189',  # pause
+    '🕒': '5379574854682977560',  # clock-3
+    '📢': '5379852395469646422',  # megaphone
+    '📣': '5379852395469646422',  # megaphone
+    '⬆': '5377600552706288369',  # arrow-up
+    '♻': '5377714833196098985',  # recycle
+    '↩': '5377527941989183881',  # undo-2
+    '⚖': '5379986690507057096',  # scale
+    '🛒': '5377784196917933604',  # shopping-cart
+    '❗': '5377342691459770661',  # circle-alert
+    '📤': '5377754784981890312',  # upload
+    '🔁': '5379618461485934387',  # repeat
+    '🛟': '5377564689729365607',  # life-buoy
+    '🆘': '5377564689729365607',  # life-buoy
+    '⏱': '5377475427424053720',  # timer
+    '🛡': '5380071228348343945',  # shield-check
+    '👀': '5379897415316840448',  # scan-eye
+    '🖥': '5377805963812184320',  # monitor
+    '➡': '5379803029115544157',  # arrow-right
+    '📆': '5379775154777796547',  # calendar-range
+    '🎲': '5379761333573035462',  # dices
+    '💤': '5377696334771957816',  # moon
+    '🏷': '5377813905206715943',  # tag
+    '📬': '5377455734999000145',  # mailbox
+    '🧾': '5377537498291416638',  # receipt
+    '➖': '5379987240262868841',  # minus
+    '💬': '5377696759973719363',  # message-circle
+    '💻': '5379620845192782713',  # laptop
+    '📥': '5379592532768366866',  # download
+    '📲': '5379592532768366866',  # download
+    '🔐': '5379895585660778443',  # lock-keyhole
+    '🗳': '5377727563479167883',  # vote
+    '✖': '5377579150884252921',  # x
+    '⏹': '5377498852175684243',  # square
+    '🧹': '5377457796583303766',  # brush-cleaning
+    '🚦': '5379554324739305545',  # traffic-cone
+    '📜': '5379992523072643825',  # scroll-text
+    '🚚': '5377754458564370488',  # truck
+    '✉': '5377684892979077013',  # mail
+    '📧': '5377684892979077013',  # mail
+    '📺': '5377426430437141938',  # tv
+    '🕐': '5377768756510502433',  # clock-1
+    '📎': '5377712672827547164',  # paperclip
+    '🔥': '5379677229523445582',  # flame
+    '📷': '5379808569623358170',  # camera
+    '🎥': '5377472141774071248',  # video
+    '🖼': '5377818814354334680',  # image
+    '🔚': '5377406171076404600',  # arrow-right-to-line
+    '🏅': '5380041597368968784',  # medal
+    '👋': '5377386848018538471',  # hand
+    '🔔': '5377497078354191505',  # bell
+    '📉': '5377603786816663548',  # trending-down
+    '🗄': '5379700692929782407',  # archive
+    '📶': '5377335372835501496',  # signal
+    '🍎': '5380049263885589852',  # apple
+    '🍏': '5380049263885589852',  # apple
+    '🗂': '5379846661688304185',  # folder-open
+    '⛓': '5377701832330092804',  # link-2
+    '🏬': '5380104007538745970',  # store
+    '💪': '5379625582541709860',  # biceps-flexed
+    '📍': '5377358595723666703',  # map-pin
+    '⛔': '5379923502948195546',  # circle-minus
+    '🔓': '5377687263801026930',  # lock-open
+    '🛑': '5377833262624320132',  # octagon-x
+    '🔑': '5377770504562191368',  # key-round
+    '💵': '5377687594513509757',  # banknote
+    '◀': '5379732613126726740',  # chevron-left
+    '👻': '5377761425001326159',  # ghost
+    '🥶': '5377479018016711932',  # snowflake
+    '🧊': '5377479018016711932',  # snowflake
+    '♾': '5379695788077134120',  # infinity
+    '🪜': '5380025967982978623',  # list-ordered
+    '📰': '5377422401757814915',  # newspaper
+    '🧭': '5377712672827547165',  # compass
+    '🗺': '5380019276423931554',  # map
+    '🔌': '5379596565742656730',  # plug
 }
 
 # Longest glyphs first so multi-codepoint emoji win over any prefix.
@@ -152,3 +250,13 @@ def split_leading_glyph(text: str | None) -> tuple[str | None, str]:
     if rest.startswith(' '):
         rest = rest[1:]
     return emoji_id, rest
+
+
+def neutral_style(style: str | None) -> str | None:
+    """House button scheme: every client button is neutral grey except ``danger``.
+
+    Green line icons are the accent; a coloured background would repaint them
+    into a white silhouette, so ``success``/``primary`` are dropped. Rich-only
+    ``link`` is a shape, not a colour, so it is kept too.
+    """
+    return style if style in ('danger', 'link') else None

@@ -1,4 +1,4 @@
-"""Rewrite outgoing message text/caption to use brega_by custom emoji.
+"""Rewrite outgoing message text/caption to use brega_line custom emoji.
 
 A single session-level request middleware replaces mapped unicode emoji with
 ``<tg-emoji>`` tags (see :func:`app.utils.brega_icons.emojify`) on every send/
@@ -12,7 +12,8 @@ starts with a mapped glyph (see :func:`_theme_inline_buttons`): inline buttons
 route by ``callback_data``, so rewriting their text is safe. REPLY keyboards are
 left untouched — they route by button TEXT (см. reply-menu), so stripping their
 captions would break routing. Admin buttons (callback_data starting with
-``admin``) are skipped.
+``admin``) are skipped. The same pass enforces the house colour scheme: client
+inline buttons lose ``success``/``primary`` (only ``danger`` stays).
 """
 
 from __future__ import annotations
@@ -25,7 +26,7 @@ from aiogram.client.session.middlewares.base import BaseRequestMiddleware, NextR
 from aiogram.enums import ParseMode
 from aiogram.methods import TelegramMethod
 
-from app.utils.brega_icons import emojify, split_leading_glyph
+from app.utils.brega_icons import emojify, neutral_style, split_leading_glyph
 
 
 def _effective_parse_mode(method: TelegramMethod[Any], bot: Bot) -> Any:
@@ -59,9 +60,11 @@ def _theme_inline_buttons(reply_markup: Any) -> None:
         return
     for row in rows:
         for button in row:
-            if getattr(button, 'icon_custom_emoji_id', None):
-                continue
             if (getattr(button, 'callback_data', None) or '').startswith('admin'):
+                continue
+            if getattr(button, 'style', None):
+                button.style = neutral_style(button.style)
+            if getattr(button, 'icon_custom_emoji_id', None):
                 continue
             emoji_id, rest = split_leading_glyph(getattr(button, 'text', None))
             if emoji_id and rest.strip():
