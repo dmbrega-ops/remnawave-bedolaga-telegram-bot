@@ -24,7 +24,7 @@ import html
 
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
-from app.utils.brega_icons import neutral_style, split_leading_glyph
+from app.utils.brega_icons import icon_and_caption, neutral_style
 
 
 # InputRichBlockButtons: «List of 1-8 buttons to send». Более длинный ряд сервер
@@ -51,12 +51,8 @@ def _button_text_html(button: InlineKeyboardButton) -> str:
     icon_id = button.icon_custom_emoji_id
     raw = button.text or ''
     # Rich buttons bypass BregaEmojiMiddleware, so auto-wire the leading glyph here.
-    if not icon_id and not _is_admin(button):
-        icon_id, rest = split_leading_glyph(raw)
-        if icon_id and rest.strip():
-            raw = rest
-        else:
-            icon_id = None
+    if not icon_id:
+        icon_id, raw = icon_and_caption(raw)
     text = html.escape(raw)
     if icon_id:
         return f'<tg-emoji emoji-id="{_attr(icon_id)}"></tg-emoji>{text}'

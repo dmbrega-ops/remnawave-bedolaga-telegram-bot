@@ -11,9 +11,9 @@ It also auto-wires custom-emoji icons on INLINE-keyboard buttons whose caption
 starts with a mapped glyph (see :func:`_theme_inline_buttons`): inline buttons
 route by ``callback_data``, so rewriting their text is safe. REPLY keyboards are
 left untouched — they route by button TEXT (см. reply-menu), so stripping their
-captions would break routing. Admin buttons (callback_data starting with
-``admin``) are skipped. The same pass enforces the house colour scheme: client
-inline buttons lose ``success``/``primary`` (only ``danger`` stays).
+captions would break routing. Admin buttons get icons too but keep their
+colours. The same pass enforces the house colour scheme: client inline buttons
+lose ``success``/``primary`` (only ``danger`` stays).
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ from aiogram.client.session.middlewares.base import BaseRequestMiddleware, NextR
 from aiogram.enums import ParseMode
 from aiogram.methods import TelegramMethod
 
-from app.utils.brega_icons import emojify, neutral_style, split_leading_glyph
+from app.utils.brega_icons import emojify, icon_and_caption, neutral_style
 
 
 def _effective_parse_mode(method: TelegramMethod[Any], bot: Bot) -> Any:
@@ -50,26 +50,25 @@ def _theme_inline_buttons(reply_markup: Any) -> None:
     проставляем ``icon_custom_emoji_id`` и срезаем ведущий глиф.
 
     Только ``inline_keyboard`` (маршрутизируется по callback_data — менять текст
-    безопасно, в отличие от reply-клавиатур, что роутятся по тексту). Пропускаем:
-    reply-клавиатуры, кнопки с уже проставленной иконкой, админские кнопки
-    (callback_data начинается с ``admin``) и кнопки-«только глиф» (пустая подпись
-    недопустима в Telegram).
+    безопасно, в отличие от reply-клавиатур, что роутятся по тексту). Пропускаем
+    reply-клавиатуры и кнопки с уже проставленной иконкой. Кнопки-«только глиф»
+    получают невидимую подпись (пустая недопустима в Telegram). Админские кнопки
+    (callback_data начинается с ``admin``) получают иконки, но сохраняют цвет.
     """
     rows = getattr(reply_markup, 'inline_keyboard', None)
     if not rows:
         return
     for row in rows:
         for button in row:
-            if (getattr(button, 'callback_data', None) or '').startswith('admin'):
-                continue
-            if getattr(button, 'style', None):
+            is_admin = (getattr(button, 'callback_data', None) or '').startswith('admin')
+            if not is_admin and getattr(button, 'style', None):
                 button.style = neutral_style(button.style)
             if getattr(button, 'icon_custom_emoji_id', None):
                 continue
-            emoji_id, rest = split_leading_glyph(getattr(button, 'text', None))
-            if emoji_id and rest.strip():
+            emoji_id, caption = icon_and_caption(getattr(button, 'text', None))
+            if emoji_id:
                 button.icon_custom_emoji_id = emoji_id
-                button.text = rest
+                button.text = caption
 
 
 class BregaEmojiMiddleware(BaseRequestMiddleware):

@@ -59,6 +59,8 @@ BREGA_ICON: dict[str, str] = {
 _FE0F = '️'
 
 GLYPH_TO_ID: dict[str, str] = {
+    '☰': '5379993910347081404',  # menu (not an emoji; set entry is filed under 📃)
+    '📃': '5379993910347081404',  # menu
     '❌': '5377302645184703818',  # x
     '✅': '5377379963185964956',  # circle-check
     '💳': '5377623509306483812',  # credit-card
@@ -260,3 +262,16 @@ def neutral_style(style: str | None) -> str | None:
     ``link`` is a shape, not a colour, so it is kept too.
     """
     return style if style in ('danger', 'link') else None
+
+
+# Telegram rejects an empty button caption, so a glyph-only button (pagination
+# arrows) keeps an invisible WORD JOINER next to its custom icon.
+ICON_ONLY_TEXT = '\u2060'
+
+
+def icon_and_caption(text: str | None) -> tuple[str | None, str]:
+    """Leading mapped glyph → (emoji_id, caption); glyph-only → invisible caption."""
+    emoji_id, rest = split_leading_glyph(text)
+    if not emoji_id:
+        return None, text or ''
+    return emoji_id, rest if rest.strip() else ICON_ONLY_TEXT
