@@ -386,7 +386,13 @@ async def show_service_rules(callback: types.CallbackQuery, db_user: User, db: A
             )
         keyboard_rows.append(nav_row)
 
-    keyboard_rows.append([types.InlineKeyboardButton(text=strip_leading_emoji(texts.BACK), icon_custom_emoji_id=BREGA_ICON['back'], callback_data='menu_info')])
+    keyboard_rows.append(
+        [
+            types.InlineKeyboardButton(
+                text=strip_leading_emoji(texts.BACK), icon_custom_emoji_id=BREGA_ICON['back'], callback_data='menu_info'
+            )
+        ]
+    )
 
     await callback.message.edit_text(
         message_text,
@@ -472,7 +478,15 @@ async def show_promo_groups_info(
     promo_groups = await get_auto_assign_promo_groups(db)
 
     keyboard = types.InlineKeyboardMarkup(
-        inline_keyboard=[[types.InlineKeyboardButton(text=strip_leading_emoji(texts.BACK), icon_custom_emoji_id=BREGA_ICON['back'], callback_data='menu_info')]]
+        inline_keyboard=[
+            [
+                types.InlineKeyboardButton(
+                    text=strip_leading_emoji(texts.BACK),
+                    icon_custom_emoji_id=BREGA_ICON['back'],
+                    callback_data='menu_info',
+                )
+            ]
+        ]
     )
 
     if not promo_groups:
@@ -652,7 +666,13 @@ async def show_faq_pages(
             ]
         )
 
-    buttons.append([types.InlineKeyboardButton(text=strip_leading_emoji(texts.BACK), icon_custom_emoji_id=BREGA_ICON['back'], callback_data='menu_info')])
+    buttons.append(
+        [
+            types.InlineKeyboardButton(
+                text=strip_leading_emoji(texts.BACK), icon_custom_emoji_id=BREGA_ICON['back'], callback_data='menu_info'
+            )
+        ]
+    )
 
     await callback.message.edit_text(
         caption,
@@ -799,7 +819,13 @@ async def show_faq_page(
             )
         ]
     )
-    keyboard_rows.append([types.InlineKeyboardButton(text=strip_leading_emoji(texts.BACK), icon_custom_emoji_id=BREGA_ICON['back'], callback_data='menu_info')])
+    keyboard_rows.append(
+        [
+            types.InlineKeyboardButton(
+                text=strip_leading_emoji(texts.BACK), icon_custom_emoji_id=BREGA_ICON['back'], callback_data='menu_info'
+            )
+        ]
+    )
 
     await callback.message.edit_text(
         message_text,
@@ -923,7 +949,13 @@ async def show_privacy_policy(
 
         keyboard_rows.append(nav_row)
 
-    keyboard_rows.append([types.InlineKeyboardButton(text=strip_leading_emoji(texts.BACK), icon_custom_emoji_id=BREGA_ICON['back'], callback_data='menu_info')])
+    keyboard_rows.append(
+        [
+            types.InlineKeyboardButton(
+                text=strip_leading_emoji(texts.BACK), icon_custom_emoji_id=BREGA_ICON['back'], callback_data='menu_info'
+            )
+        ]
+    )
 
     await callback.message.edit_text(
         message_text,
@@ -1047,7 +1079,13 @@ async def show_public_offer(
 
         keyboard_rows.append(nav_row)
 
-    keyboard_rows.append([types.InlineKeyboardButton(text=strip_leading_emoji(texts.BACK), icon_custom_emoji_id=BREGA_ICON['back'], callback_data='menu_info')])
+    keyboard_rows.append(
+        [
+            types.InlineKeyboardButton(
+                text=strip_leading_emoji(texts.BACK), icon_custom_emoji_id=BREGA_ICON['back'], callback_data='menu_info'
+            )
+        ]
+    )
 
     await callback.message.edit_text(
         message_text,
@@ -1144,7 +1182,13 @@ async def show_info_page(
             )
         keyboard_rows.append(nav_row)
 
-    keyboard_rows.append([types.InlineKeyboardButton(text=strip_leading_emoji(texts.BACK), icon_custom_emoji_id=BREGA_ICON['back'], callback_data='menu_info')])
+    keyboard_rows.append(
+        [
+            types.InlineKeyboardButton(
+                text=strip_leading_emoji(texts.BACK), icon_custom_emoji_id=BREGA_ICON['back'], callback_data='menu_info'
+            )
+        ]
+    )
 
     await callback.message.edit_text(
         message_text,
