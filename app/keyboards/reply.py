@@ -52,29 +52,42 @@ def nav_menu_labels(language: str = 'ru') -> dict[str, str]:
     """
     texts = get_texts(language)
     return {
-        'profile': texts.t('REPLY_MENU_PROFILE', '👤 Профиль'),
+        'home': texts.t('REPLY_MENU_HOME', '🏠 Главная'),
         'subscription': texts.t('MENU_SUBSCRIPTION', '📱 Подписка'),
+        'more': texts.t('MENU_MORE', '☰ Ещё'),
+    }
+
+
+def legacy_nav_menu_labels(language: str = 'ru') -> dict[str, str]:
+    """Подписи прежней нижней клавиатуры (до 20.10.2026).
+
+    Telegram держит у клиента старую клавиатуру, пока бот не пришлёт новую, — эти
+    нажатия тоже обрабатываем и заодно меняем клавиатуру на актуальную.
+    """
+    texts = get_texts(language)
+    return {
+        'profile': texts.t('REPLY_MENU_PROFILE', '👤 Профиль'),
         'info': texts.t('MENU_INFO', 'ℹ️ Инфо'),
     }
 
 
 def get_nav_reply_keyboard(language: str = 'ru') -> ReplyKeyboardMarkup:
-    """Persistent bottom reply-keyboard with the three main-menu shortcuts."""
+    """Persistent bottom reply-keyboard: Главная / Подписка / Ещё — as the inline main menu."""
     labels = nav_menu_labels(language)
     return ReplyKeyboardMarkup(
         keyboard=[
             [
                 KeyboardButton(
-                    text=strip_leading_emoji(labels['profile']),
-                    icon_custom_emoji_id=BREGA_ICON['profile'],
+                    text=strip_leading_emoji(labels['home']),
+                    icon_custom_emoji_id=BREGA_ICON['home'],
                 ),
                 KeyboardButton(
                     text=strip_leading_emoji(labels['subscription']),
                     icon_custom_emoji_id=BREGA_ICON['subscription'],
                 ),
                 KeyboardButton(
-                    text=strip_leading_emoji(labels['info']),
-                    icon_custom_emoji_id=BREGA_ICON['info'],
+                    text=strip_leading_emoji(labels['more']),
+                    icon_custom_emoji_id=BREGA_ICON['menu'],
                 ),
             ]
         ],

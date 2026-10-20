@@ -296,6 +296,7 @@ def get_language_selection_keyboard(
     current_language: str | None = None,
     *,
     include_back: bool = False,
+    back_callback: str = 'back_to_menu',
     language: str = DEFAULT_LANGUAGE,
 ) -> InlineKeyboardMarkup:
     available_languages = settings.get_available_languages()
@@ -330,7 +331,7 @@ def get_language_selection_keyboard(
 
     if include_back:
         texts = get_texts(language)
-        buttons.append([InlineKeyboardButton(text=strip_leading_emoji(texts.BACK), icon_custom_emoji_id=BREGA_ICON['back'], callback_data='back_to_menu')])
+        buttons.append([InlineKeyboardButton(text=strip_leading_emoji(texts.BACK), icon_custom_emoji_id=BREGA_ICON['back'], callback_data=back_callback)])
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
@@ -740,8 +741,8 @@ def get_main_menu_keyboard(
     # конфигом (ACTIVATE_BUTTON_VISIBLE), не кодом — эта ветка тут больше не нужна.
     keyboard.append(
         [
-            InlineKeyboardButton(text=strip_leading_emoji(texts.t('MENU_MANAGE', '⚙️ Управление')), icon_custom_emoji_id=BREGA_ICON['settings'], callback_data='menu_subscription'),
-            InlineKeyboardButton(text=texts.t('MENU_MORE', '☰ Ещё'), callback_data='menu_more'),
+            InlineKeyboardButton(text=strip_leading_emoji(texts.MENU_SUBSCRIPTION), icon_custom_emoji_id=BREGA_ICON['subscription'], callback_data='menu_subscription'),
+            InlineKeyboardButton(text=strip_leading_emoji(texts.t('MENU_MORE', '☰ Ещё')), icon_custom_emoji_id=BREGA_ICON['menu'], callback_data='menu_more'),
         ]
     )
 
@@ -855,7 +856,7 @@ def get_info_menu_keyboard(
             ]
         )
 
-    buttons.append([InlineKeyboardButton(text=strip_leading_emoji(texts.BACK), icon_custom_emoji_id=BREGA_ICON['back'], callback_data='back_to_menu')])
+    buttons.append([InlineKeyboardButton(text=strip_leading_emoji(texts.BACK), icon_custom_emoji_id=BREGA_ICON['back'], callback_data='menu_more')])
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
@@ -1656,7 +1657,7 @@ def get_balance_keyboard(language: str = DEFAULT_LANGUAGE) -> InlineKeyboardMark
                 )
             ]
         )
-    keyboard.append([InlineKeyboardButton(text=strip_leading_emoji(texts.BACK), icon_custom_emoji_id=BREGA_ICON['back'], callback_data='back_to_menu')])
+    keyboard.append([InlineKeyboardButton(text=strip_leading_emoji(texts.BACK), icon_custom_emoji_id=BREGA_ICON['back'], callback_data='menu_more')])
 
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
@@ -2490,7 +2491,7 @@ def get_referral_keyboard(language: str = DEFAULT_LANGUAGE) -> InlineKeyboardMar
             ]
         )
 
-    keyboard.append([InlineKeyboardButton(text=strip_leading_emoji(texts.BACK), icon_custom_emoji_id=BREGA_ICON['back'], callback_data='back_to_menu')])
+    keyboard.append([InlineKeyboardButton(text=strip_leading_emoji(texts.BACK), icon_custom_emoji_id=BREGA_ICON['back'], callback_data='menu_more')])
 
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
@@ -2528,7 +2529,7 @@ def get_support_keyboard(language: str = DEFAULT_LANGUAGE) -> InlineKeyboardMark
                 )
             ]
         )
-    rows.append([InlineKeyboardButton(text=strip_leading_emoji(texts.BACK), icon_custom_emoji_id=BREGA_ICON['back'], callback_data='back_to_menu')])
+    rows.append([InlineKeyboardButton(text=strip_leading_emoji(texts.BACK), icon_custom_emoji_id=BREGA_ICON['back'], callback_data='menu_more')])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 

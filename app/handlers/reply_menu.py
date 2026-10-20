@@ -1,24 +1,24 @@
 """Persistent reply-keyboard main-menu shortcuts (RU-only stand).
 
-Adds a persistent bottom ReplyKeyboard with three shortcuts — Профиль (opens the
-in-bot main menu), Подписка and Инфо — that work from ANY FSM state. Registered
-before every FSM message handler, so pressing a shortcut while entering e.g. a
-promocode cancels that input (state is cleared) and navigates instead of being
-swallowed as the awaited text (risk #1).
+The bottom ReplyKeyboard mirrors the inline main menu — Главная (main menu),
+Подписка (subscription card, the inline «Подписка» button) and Ещё (the «☰ Ещё»
+screen) — so the same section has the same name wherever it is opened. The
+shortcuts work from ANY FSM state: registered before every FSM message handler,
+so pressing one while entering e.g. a promocode cancels that input (state is
+cleared) and navigates instead of being swallowed as the awaited text.
+
+One menu in the chat: a shortcut deletes the previous menu the bot sent as a new
+message (see :mod:`app.utils.nav_menu`) and the tapped shortcut text itself, so
+stale live menus don't pile up in the chat.
 
 The button caption and the message-text filter come from the SAME localization
 call (:func:`app.keyboards.reply.nav_menu_labels`), so they can never drift.
+Captions of the previous keyboard (Профиль / Инфо) are still routed and swap the
+keyboard for the current one.
 
-Routing reuses the existing callback section handlers (``show_main_menu``,
-``show_subscription_info``, ``show_info_menu``) through a lightweight
+Подписка/Ещё reuse the existing callback section handlers through a lightweight
 ``CallbackQuery`` shim whose ``answer()`` is a no-op and whose ``.message`` is a
-freshly sent bot message. Nothing in those prod handlers is touched, and no
-section-rendering logic is duplicated.
-
-Trade-off (v1): Профиль/Инфо go through ``edit_or_answer_photo``, which cannot
-edit a plain-text placeholder into a photo, so it cleanly falls back to a text
-send — i.e. those two screens open WITHOUT the logo header when reached via the
-reply keyboard. Inline navigation keeps the logo as before.
+freshly sent bot message the handler edits in place.
 """
 
 from aiogram import Dispatcher, F, types
@@ -28,18 +28,20 @@ import structlog
 
 from app.config import settings
 from app.database.models import User
-from app.keyboards.reply import get_nav_reply_keyboard, nav_menu_labels
+from app.keyboards.reply import get_nav_reply_keyboard, legacy_nav_menu_labels, nav_menu_labels
 from app.localization.texts import get_texts
 from app.utils.miniapp_buttons import strip_leading_emoji
+from app.utils.nav_menu import drop_previous_nav_menu, remember_nav_menu
 
 
 logger = structlog.get_logger(__name__)
 
 # RU-only stand: labels/filters resolved once at registration time.
 _LABELS = nav_menu_labels(settings.DEFAULT_LANGUAGE)
+_LEGACY_LABELS = legacy_nav_menu_labels(settings.DEFAULT_LANGUAGE)
 
 
-def _label_variants(key: str) -> set[str]:
+def _label_variants(key: str, labels: dict[str, str] = _LABELS) -> set[str]:
     """Both the full label and the emoji-stripped one.
 
     The nav reply-keyboard buttons now carry a custom-emoji icon and their
@@ -47,7 +49,7 @@ def _label_variants(key: str) -> set[str]:
     text (e.g. "Профиль"). Older cached keyboards still send the full "👤 Профиль".
     Match either so routing never drifts.
     """
-    full = _LABELS[key]
+    full = labels[key]
     return {full, strip_leading_emoji(full)}
 
 
@@ -63,8 +65,18 @@ class _ReplyNavCallback(types.CallbackQuery):
         return None
 
 
+async def _clear_chat(message: types.Message) -> None:
+    """Убрать прежнее меню и нажатую подпись кнопки — в чате остаётся одно меню."""
+    await drop_previous_nav_menu(message.bot, message.chat.id)
+    try:
+        await message.delete()
+    except Exception:  # нет прав / уже удалено — не важно
+        pass
+
+
 async def _open_section(message: types.Message, db_user: User, db: AsyncSession, data: str, handler) -> None:
     sent = await message.answer('⏳')
+    await remember_nav_menu(message.chat.id, sent.message_id)
     shim = _ReplyNavCallback(
         id=f'reply_nav:{message.message_id}',
         from_user=message.from_user,
@@ -75,11 +87,11 @@ async def _open_section(message: types.Message, db_user: User, db: AsyncSession,
     await handler(shim, db_user, db)
 
 
-async def open_profile(message: types.Message, db_user: User, state: FSMContext, db: AsyncSession) -> None:
+async def open_home(message: types.Message, db_user: User, state: FSMContext, db: AsyncSession) -> None:
     await state.clear()
-    # Render the main menu as a fresh rich/logo message (same path as /start),
-    # not via the '⏳'+edit shim which fell back to a reduced text menu without
-    # the logo and custom icons.
+    await _clear_chat(message)
+    # Fresh rich message (same path as /start), not the '⏳'+edit shim: editing a
+    # plain-text placeholder fell back to a reduced text menu.
     from app.handlers.menu import answer_main_menu
 
     await answer_main_menu(message, db_user, db)
@@ -87,13 +99,29 @@ async def open_profile(message: types.Message, db_user: User, state: FSMContext,
 
 async def open_subscription(message: types.Message, db_user: User, state: FSMContext, db: AsyncSession) -> None:
     await state.clear()
+    await _clear_chat(message)
     from app.handlers.subscription.purchase import show_subscription_info
 
     await _open_section(message, db_user, db, 'menu_subscription', show_subscription_info)
 
 
-async def open_info(message: types.Message, db_user: User, state: FSMContext, db: AsyncSession) -> None:
+async def open_more(message: types.Message, db_user: User, state: FSMContext, db: AsyncSession) -> None:
     await state.clear()
+    await _clear_chat(message)
+    from app.handlers.menu import show_more_menu
+
+    await _open_section(message, db_user, db, 'menu_more', show_more_menu)
+
+
+async def open_legacy_profile(message: types.Message, db_user: User, state: FSMContext, db: AsyncSession) -> None:
+    await send_main_reply_keyboard(message)
+    await open_home(message, db_user, state, db)
+
+
+async def open_legacy_info(message: types.Message, db_user: User, state: FSMContext, db: AsyncSession) -> None:
+    await state.clear()
+    await send_main_reply_keyboard(message)
+    await _clear_chat(message)
     from app.handlers.menu import show_info_menu
 
     await _open_section(message, db_user, db, 'menu_info', show_info_menu)
@@ -123,6 +151,8 @@ async def send_main_reply_keyboard(target_message: types.Message, language: str 
 
 
 def register_handlers(dp: Dispatcher) -> None:
-    dp.message.register(open_profile, F.text.in_(_label_variants('profile')))
+    dp.message.register(open_home, F.text.in_(_label_variants('home')))
     dp.message.register(open_subscription, F.text.in_(_label_variants('subscription')))
-    dp.message.register(open_info, F.text.in_(_label_variants('info')))
+    dp.message.register(open_more, F.text.in_(_label_variants('more')))
+    dp.message.register(open_legacy_profile, F.text.in_(_label_variants('profile', _LEGACY_LABELS)))
+    dp.message.register(open_legacy_info, F.text.in_(_label_variants('info', _LEGACY_LABELS)))

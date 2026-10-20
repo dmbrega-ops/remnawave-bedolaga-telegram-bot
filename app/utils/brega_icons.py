@@ -51,6 +51,8 @@ BREGA_ICON: dict[str, str] = {
     'email': '5377716289190010220',  # 📧 mail
     'lock': '5380085633668655004',  # 🔒 lock
     'unlimited': '5377610456900872577',  # ♾ infinity
+    'home': '5379881618427126088',  # 🏠 house
+    'menu': '5379658198523356309',  # ☰ menu
 }
 
 

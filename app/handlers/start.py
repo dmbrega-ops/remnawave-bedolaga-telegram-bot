@@ -299,7 +299,7 @@ def _split_start_param_subid(param: str | None) -> tuple[str | None, str | None]
     return head, tail
 
 
-async def answer_menu_with_media(message, text: str, keyboard, db) -> None:
+async def answer_menu_with_media(message, text: str, keyboard, db):
     """Отвечает меню с медиа-шапкой на входящее сообщение (например, /start).
 
     Отличается от :func:`send_menu_with_media` тем, что при отсутствии видео
@@ -316,20 +316,19 @@ async def answer_menu_with_media(message, text: str, keyboard, db) -> None:
         video_file_id = await get_start_video_file_id(db)
         if video_file_id:
             try:
-                await message.answer_video(
+                return await message.answer_video(
                     video=video_file_id,
                     caption=text,
                     reply_markup=keyboard,
                     parse_mode='HTML',
                 )
-                return
             except Exception as video_error:
                 logger.warning(
                     'Не удалось отправить видео меню — уходим на стандартный путь',
                     error=str(video_error),
                 )
 
-    await message.answer(text, reply_markup=keyboard, parse_mode='HTML')
+    return await message.answer(text, reply_markup=keyboard, parse_mode='HTML')
 
 
 async def send_menu_with_media(

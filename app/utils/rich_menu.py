@@ -765,6 +765,9 @@ async def try_send_rich_main_menu(
     try:
         sent = await _send_rich_menu(bot, chat_id, rich_html, keyboard, db_user.language)
         await remember_live_menu(chat_id, getattr(sent, 'message_id', None), db_user, texts)
+        from app.utils.nav_menu import remember_nav_menu
+
+        await remember_nav_menu(chat_id, getattr(sent, 'message_id', None))
         return True
     except TelegramForbiddenError:
         # Пользователь заблокировал бота — классический рендер упадёт так же, не ретраим.
