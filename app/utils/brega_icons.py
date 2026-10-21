@@ -1,7 +1,7 @@
 """Custom-emoji icon ids for bot buttons + text theming.
 
 Source set: `brega_line2_by_brega_vpn_billing_bot` (title "Brega VPN line",
-type=custom_emoji, 138 emoji; icons padded to ~80% of the cell so text lines
+type=custom_emoji, 139 emoji; icons padded to ~80% of the cell so text lines
 don't stick together — v1 `brega_line_…` filled ~92%), created by the bot itself via Bot API — so the bot
 may use these without Telegram Premium. Monochrome Lucide line icons (ISC) in the
 Ponteto green #22c55e; ❌/🚫/⛔/🛑/❗ red, ⚠️ amber. Built 2026-10-18; it replaced
@@ -70,6 +70,7 @@ GLYPH_TO_ID: dict[str, str] = {
     '🏢': '5386306803602598494',  # building-2
     '💥': '5388989362866265810',  # bomb
     '🕓': '5388671251818521765',  # clock-4
+    '🆔': '5388678643457239216',  # id-card
     '☰': '5379658198523356309',  # menu (not an emoji; set entry is filed under 📃)
     '📃': '5379658198523356309',  # menu
     '❌': '5377747655336176615',  # x
