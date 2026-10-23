@@ -58,6 +58,11 @@ async def handle_unknown_callback(callback: types.CallbackQuery, db_user: User):
     )
 
 
+async def handle_say(callback: types.CallbackQuery):
+    """Показывает текст из callback_data (say:<текст>) во всплывающем окне — для разовых постов."""
+    await callback.answer(callback.data.removeprefix('say:')[:200] or '👋', show_alert=True)
+
+
 async def handle_noop(callback: types.CallbackQuery, db_user: User):
     try:
         await callback.answer()
@@ -114,6 +119,7 @@ def register_handlers(dp: Dispatcher):
     # No-op utility handlers used in many keyboards
     dp.callback_query.register(handle_noop, F.data == 'noop')
     dp.callback_query.register(handle_current_page, F.data == 'current_page')
+    dp.callback_query.register(handle_say, F.data.startswith('say:'))
 
     dp.callback_query.register(handle_cancel, F.data.in_(['cancel', 'subscription_cancel']))
 
