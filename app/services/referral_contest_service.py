@@ -29,6 +29,16 @@ from app.database.models import ReferralContest, User
 logger = structlog.get_logger(__name__)
 
 
+def mask_public_name(name: str | None) -> str:
+    """Маскирует имя для публичного канала: первое слово, 2 буквы + ***."""
+    first = (name or '').strip().lstrip('@').split(maxsplit=1)
+    if not first or first[0].isdigit():
+        return 'Участник'
+    word = first[0]
+    keep = 1 if len(word) <= 3 else 2
+    return f'{word[:keep]}***'
+
+
 class ReferralContestService:
     def __init__(self) -> None:
         self.bot: Bot | None = None
@@ -339,10 +349,13 @@ class ReferralContestService:
         if not channel_id:
             return
 
+        # Пустая промежуточная таблица в публичном канале выглядит плохо — не постим
+        if not leaderboard and not is_final:
+            return
+
         lines = [
             f'🏆 {html.escape(contest.title)}',
             '🏁 Итоги конкурса' if is_final else '📊 Промежуточные итоги',
-            f'Время зоны: {tz.key}',
             f'Всего участников: <b>{len(leaderboard)}</b>',
             '',
             'Топ участников:',
@@ -350,7 +363,7 @@ class ReferralContestService:
 
         if leaderboard:
             for idx, (name, score, _, _is_virtual) in enumerate(leaderboard[:5], start=1):
-                lines.append(f'{idx}. {html.escape(name)} — {score}')
+                lines.append(f'{idx}. {html.escape(mask_public_name(name))} — {score}')
         else:
             lines.append('Пока нет участников.')
 
