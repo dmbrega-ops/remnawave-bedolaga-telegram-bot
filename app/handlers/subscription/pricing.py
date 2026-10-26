@@ -10,6 +10,7 @@ from app.utils.pricing_utils import (
     format_period_description,
 )
 from app.utils.subscription_time import local_days_until
+from app.utils.subscription_utils import get_display_subscription_link
 from app.utils.timezone import format_local_datetime
 
 from .common import logger
@@ -301,7 +302,7 @@ async def get_subscription_info_text(subscription, texts, db_user, db: AsyncSess
     distinct_country_codes = {c['country_code'] for c in countries_info if c.get('country_code')}
     countries_count = len(distinct_country_codes) if distinct_country_codes else len(connected_squads)
 
-    subscription_url = getattr(subscription, 'subscription_url', None) or 'Генерируется...'
+    subscription_url = get_display_subscription_link(subscription)
 
     if subscription.is_trial:
         status_text = '🎁 Тестовая'
@@ -404,7 +405,9 @@ async def get_subscription_info_text(subscription, texts, db_user, db: AsyncSess
                 info_text += f'\n• {purchase.traffic_gb} ГБ — {time_text}'
                 info_text += f'\n  {bar} {progress_percent:.0f}% | до {expire_date}'
 
-    if subscription_url and subscription_url != 'Генерируется...' and not settings.should_hide_subscription_link():
-        info_text += f'\n\n🔗 <b>Ваша ссылка для импорта в VPN приложениe:</b>\n<code>{subscription_url}</code>'
+    if subscription_url and not settings.should_hide_subscription_link():
+        info_text += (
+            f'\n\n🔗 <b>Ваша ссылка для импорта в VPN приложениe:</b>\n<code>{html.escape(subscription_url)}</code>'
+        )
 
     return info_text
