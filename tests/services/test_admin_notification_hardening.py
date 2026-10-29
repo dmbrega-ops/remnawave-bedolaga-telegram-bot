@@ -453,3 +453,25 @@ async def test_telegram_notifier_processor_redacts_token_in_traceback(
         assert '8123456789:AAH' not in captured['context']
     if captured.get('tb_override'):
         assert '8123456789:AAH' not in captured['tb_override']
+
+
+# ---------------------------------------------------------------------------
+# torrent_blocker.report cooldown (ponteto 29.10)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_torrent_report_cooldown_one_per_user(webhook_service: RemnaWaveWebhookService) -> None:
+    """A burst of reports for one user sends one admin message; another user still gets through."""
+    RemnaWaveWebhookService._recent_torrent_reports.clear()
+    webhook_service._user_handlers.pop('torrent_blocker.report', None)  # admin path only, no DB
+    sent = webhook_service._admin_service.bot.send_message
+    report = {'user': {'uuid': 'u-1', 'username': 'user_1'}, 'node': {'name': 'Riga'}}
+
+    for _ in range(5):
+        assert await webhook_service.process_event(None, 'torrent_blocker.report', report)
+    assert sent.await_count == 1
+
+    await webhook_service.process_event(None, 'torrent_blocker.report', {'user': {'uuid': 'u-2'}})
+    assert sent.await_count == 2
+    RemnaWaveWebhookService._recent_torrent_reports.clear()

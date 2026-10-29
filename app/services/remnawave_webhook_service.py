@@ -158,6 +158,11 @@ class RemnaWaveWebhookService:
     # For multi-worker setups, move to Redis or another shared store.
     _recent_recreations: dict[int, datetime] = {}
     _RECREATION_GUARD_SECONDS: int = 120  # 2-minute cooldown
+    # ponteto 29.10: torrent_blocker.report приходит каждые ~10 с, пока торрент-клиент стучится
+    # (с PROXY protocol блокер видит реальный IP, но его бан на ноде не режет трафик через мост).
+    # Одно уведомление на пользователя в час.
+    _recent_torrent_reports: dict[str, datetime] = {}
+    _TORRENT_REPORT_COOLDOWN_SECONDS: int = 3600
     _intentional_panel_deletions_by_id: dict[int, datetime] = {}
     _intentional_panel_deletions_by_telegram_id: dict[int, datetime] = {}
     _INTENTIONAL_PANEL_DELETION_GUARD_SECONDS: int = 300
@@ -350,6 +355,10 @@ class RemnaWaveWebhookService:
         Returns True if the event was processed, False if skipped/unknown.
         db may be None for admin events that don't require database access.
         """
+        if event_name == 'torrent_blocker.report' and self._torrent_report_on_cooldown(data):
+            logger.debug('Torrent report on cooldown, skipping', event_name=event_name)
+            return True
+
         # Check if event has both admin and user handlers (e.g. torrent_blocker.report)
         user_handler = self._user_handlers.get(event_name)
         if event_name in self._admin_handlers and user_handler:
@@ -371,6 +380,21 @@ class RemnaWaveWebhookService:
             return await self._process_user_event(db, event_name, data, user_handler)
 
         logger.debug('Unhandled RemnaWave webhook event', event_name=event_name)
+        return False
+
+    @classmethod
+    def _torrent_report_on_cooldown(cls, data: dict) -> bool:
+        user_data = data.get('user') if isinstance(data.get('user'), dict) else {}
+        key = str(user_data.get('uuid') or user_data.get('username') or user_data.get('id') or '')
+        if not key:
+            return False
+        now = datetime.now(UTC)
+        for k in [k for k, v in cls._recent_torrent_reports.items()
+                  if (now - v).total_seconds() >= cls._TORRENT_REPORT_COOLDOWN_SECONDS]:
+            del cls._recent_torrent_reports[k]
+        if key in cls._recent_torrent_reports:
+            return True
+        cls._recent_torrent_reports[key] = now
         return False
 
     async def _process_user_event(self, db: AsyncSession, event_name: str, data: dict, handler: Any) -> bool:
